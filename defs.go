@@ -132,4 +132,26 @@ const (
 	NoSquare Square = 99
 )
 
-var board [120]Piece
+type Bitboard uint64
+
+type Board struct {
+	Pieces [120]Piece // Mailbox board (with border/padding), indexed by Square
+
+	Pawns [3]Bitboard // White pawns, black pawns, both colours pawns
+
+	KingSq [2]Square // White king, black king
+
+	Side      Color  // Which side to move
+	EnPas     Square // En passant square
+	FiftyMove int    // 50 moves rule count
+
+	Ply    int // Depth of current search
+	HisPly int // Count of all half-moves (plies) made since game start
+
+	PosKey uint64 // Zobrist hash key uniquely indentifying the current position
+
+	PceNum [13]int // Count of each piece type on the board, indexed by Piece
+	BigPce [3]int  // Count of non-pawn pieces (per side + both)
+	MajPce [3]int  // Count of major pieces: rooks and queens (per side + both)
+	MinPce [3]int  // Count of minor pieces: knights and bishops (per side + both)
+}
