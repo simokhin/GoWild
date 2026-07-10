@@ -2,6 +2,10 @@ package main
 
 const offBoard = 65 // Sentinel value used to mark off-board squares in the 120-to-64 mapping
 
+func AllInit() {
+	InitSq120ToSq64()
+}
+
 // InitSq120ToSq64 builds the lookup tables that translate between the 120-square
 // mailbox board indices and the compact 64-square array indices.
 func InitSq120ToSq64() {

@@ -1,23 +1,25 @@
 package main
 
+import "fmt"
+
 // Piece represents a chess piece type.
 // The values are used internally in the 120-square mailbox board.
 type Piece int8
 
 const (
 	Empty Piece = iota // Empty square
-	WP                  // White Pawn
-	WN                  // White Knight
-	WB                  // White Bishop
-	WR                  // White Rook
-	WQ                  // White Queen
-	WK                  // White King
-	BP                  // Black Pawn
-	BN                  // Black Knight
-	BB                  // Black Bishop
-	BR                  // Black Rook
-	BQ                  // Black Queen
-	BK                  // Black King
+	WP                 // White Pawn
+	WN                 // White Knight
+	WB                 // White Bishop
+	WR                 // White Rook
+	WQ                 // White Queen
+	WK                 // White King
+	BP                 // Black Pawn
+	BN                 // Black Knight
+	BB                 // Black Bishop
+	BR                 // Black Rook
+	BQ                 // Black Queen
+	BK                 // Black King
 )
 
 // File represents a file (column) on the chessboard, from A (left) to H (right).
@@ -192,6 +194,8 @@ type Board struct {
 	MinPce [3]int  // Count of minor pieces: knights and bishops (per side + both)
 
 	History []Undo
+
+	PList [13][10]Square
 }
 
 // Translate file+rank (A1, B4 etc.) to square index
@@ -199,5 +203,20 @@ func FR2SQ(file File, rank Rank) Square {
 	return Square(21 + int(file) + int(rank)*10)
 }
 
-var Sq120ToSq64 [120]int    // Maps a 120-square mailbox index to its 64-square index
+var Sq120ToSq64 [120]int   // Maps a 120-square mailbox index to its 64-square index
 var Sq64ToSq120 [64]Square // Maps a 64-square index back to its 120-square mailbox index
+
+func SQ64(sq120 Square) int {
+	return Sq120ToSq64[sq120]
+}
+
+const Debug = true
+
+func Assert(condition bool, message string) {
+	if !Debug {
+		return
+	}
+	if !condition {
+		panic(fmt.Sprintf("Assertion failed: %s", message))
+	}
+}
