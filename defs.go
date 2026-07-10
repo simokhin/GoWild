@@ -1,23 +1,26 @@
 package main
 
+// Piece represents a chess piece type.
+// The values are used internally in the 120-square mailbox board.
 type Piece int8
 
 const (
-	Empty Piece = iota
-	WP
-	WN
-	WB
-	WR
-	WQ
-	WK
-	BP
-	BN
-	BB
-	BR
-	BQ
-	BK
+	Empty Piece = iota // Empty square
+	WP                  // White Pawn
+	WN                  // White Knight
+	WB                  // White Bishop
+	WR                  // White Rook
+	WQ                  // White Queen
+	WK                  // White King
+	BP                  // Black Pawn
+	BN                  // Black Knight
+	BB                  // Black Bishop
+	BR                  // Black Rook
+	BQ                  // Black Queen
+	BK                  // Black King
 )
 
+// File represents a file (column) on the chessboard, from A (left) to H (right).
 type File int8
 
 const (
@@ -32,6 +35,7 @@ const (
 	FileNone
 )
 
+// Rank represents a rank (row) on the chessboard, from 1 (white's home) to 8 (black's home).
 type Rank int8
 
 const (
@@ -46,14 +50,18 @@ const (
 	RankNone
 )
 
+// Color represents the side to move or the owner of a piece.
 type Color int8
 
 const (
 	White Color = iota
 	Black
-	Both
+	Both // Used for bitboards that track both colours together
 )
 
+// Square is a 0x88-style mailbox board index (10x12 = 120 squares).
+// The border squares (ranks 0, 9 and files 0, 9) are off-board padding
+// used to quickly detect moves that leave the board.
 type Square int8
 
 const (
@@ -129,30 +137,37 @@ const (
 	G8 Square = 97
 	H8 Square = 98
 
-	NoSquare Square = 99
+	NoSquare Square = 99 // Sentinel value meaning "no square" (e.g., no en passant target)
 )
 
+// CastlePerm is a bitmask of which castling rights remain available.
 type CastlePerm int8
 
 const (
-	WKCA CastlePerm = 1
-	WQCA CastlePerm = 2
-	BKCA CastlePerm = 4
-	BQCA CastlePerm = 8
+	WKCA CastlePerm = 1 // White kingside castle available
+	WQCA CastlePerm = 2 // White queenside castle available
+	BKCA CastlePerm = 4 // Black kingside castle available
+	BQCA CastlePerm = 8 // Black queenside castle available
 )
 
+// MaxGameMoves is the maximum number of half-moves we store in the history.
 const MaxGameMoves = 2048
 
+// Undo stores the board state before a move, so we can take it back.
 type Undo struct {
-	Move       int
-	CastlePerm CastlePerm
-	EnPas      Square
-	FiftyMove  int
-	PosKey     uint64
+	Move       int        // The move that was played
+	CastlePerm CastlePerm // Castling rights before the move
+	EnPas      Square     // En passant square before the move
+	FiftyMove  int        // 50-move rule counter before the move
+	PosKey     uint64     // Zobrist hash key of the position before the move
 }
 
+// Bitboard is a 64-bit mask representing a set of squares on the board.
+// Bit 0 = A1, bit 63 = H8.
 type Bitboard uint64
 
+// Board holds the complete state of a chess position.
+// It uses a 120-square mailbox representation for fast move generation.
 type Board struct {
 	Pieces [120]Piece // Mailbox board (with border/padding), indexed by Square
 
@@ -184,5 +199,5 @@ func FR2SQ(file File, rank Rank) Square {
 	return Square(21 + int(file) + int(rank)*10)
 }
 
-var Sq120ToSq64 [120]int
-var Sq64ToSq120 [64]Square
+var Sq120ToSq64 [120]int    // Maps a 120-square mailbox index to its 64-square index
+var Sq64ToSq120 [64]Square // Maps a 64-square index back to its 120-square mailbox index
