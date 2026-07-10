@@ -132,6 +132,25 @@ const (
 	NoSquare Square = 99
 )
 
+type CastlePerm int8
+
+const (
+	WKCA CastlePerm = 1
+	WQCA CastlePerm = 2
+	BKCA CastlePerm = 4
+	BQCA CastlePerm = 8
+)
+
+const MaxGameMoves = 2048
+
+type Undo struct {
+	Move       int
+	CastlePerm CastlePerm
+	EnPas      Square
+	FiftyMove  int
+	PosKey     uint64
+}
+
 type Bitboard uint64
 
 type Board struct {
@@ -148,10 +167,14 @@ type Board struct {
 	Ply    int // Depth of current search
 	HisPly int // Count of all half-moves (plies) made since game start
 
+	CastlePerm CastlePerm // Bitmask of castling rights: which sides can castle which way
+
 	PosKey uint64 // Zobrist hash key uniquely indentifying the current position
 
 	PceNum [13]int // Count of each piece type on the board, indexed by Piece
 	BigPce [3]int  // Count of non-pawn pieces (per side + both)
 	MajPce [3]int  // Count of major pieces: rooks and queens (per side + both)
 	MinPce [3]int  // Count of minor pieces: knights and bishops (per side + both)
+
+	History [MaxGameMoves]Undo
 }
