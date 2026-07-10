@@ -1,5 +1,13 @@
 package main
 
 func main() {
-	println("I'm future chess engine")
+	// board representation
+
+	// array of integers
+
+	// move generation & rules of chess
+
+	// evaluation
+
+	// search
 }
