@@ -176,5 +176,13 @@ type Board struct {
 	MajPce [3]int  // Count of major pieces: rooks and queens (per side + both)
 	MinPce [3]int  // Count of minor pieces: knights and bishops (per side + both)
 
-	History [MaxGameMoves]Undo
+	History []Undo
 }
+
+// Translate file+rank (A1, B4 etc.) to square index
+func FR2SQ(file File, rank Rank) Square {
+	return Square(21 + int(file) + int(rank)*10)
+}
+
+var Sq120ToSq64 [120]int
+var Sq64ToSq120 [64]Square
