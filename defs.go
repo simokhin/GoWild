@@ -23,6 +23,7 @@ const (
 	OffBoard
 )
 
+// START_FEN is the Forsyth–Edwards Notation string for the standard initial chess position.
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 // File represents a file (column) on the chessboard, from A (left) to H (right).
@@ -194,9 +195,9 @@ type Board struct {
 	MajPce [3]int  // Count of major pieces: rooks and queens (per side + both)
 	MinPce [3]int  // Count of minor pieces: knights and bishops (per side + both)
 
-	History []Undo
+	History []Undo          // Move history stack for undoing moves (stores Undo snapshots)
 
-	PList [13][10]Square
+	PList [13][10]Square    // Piece list: for each piece type (13), up to 10 squares where that piece sits
 }
 
 // HisPly returns the count of all half-moves (plies) made since game start.

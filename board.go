@@ -40,6 +40,10 @@ func ResetBoard(pos *Board) {
 	pos.History = pos.History[:0]
 }
 
+// ParseFEN parses a Forsyth–Edwards Notation string into a Board struct.
+// It clears the board, places pieces according to the FEN, and sets the
+// side to move, castling rights, en passant square, and computes the Zobrist key.
+// Returns 0 on success, -1 on parse error.
 func ParseFEN(fen string, pos *Board) int {
 	Assert(pos != nil, "pos must not be nil")
 
@@ -144,6 +148,9 @@ func ParseFEN(fen string, pos *Board) int {
 	return 0
 }
 
+// PrintBoard prints a visual representation of the board state to stdout.
+// It displays pieces by their character codes, along with side to move,
+// en passant square, castling rights, and the Zobrist position key.
 func PrintBoard(pos *Board) {
 	var sq Square
 	var file File
