@@ -10,7 +10,7 @@ func GeneratePosKey(pos *Board) uint64 {
 	// pieces
 	for sq := range 120 {
 		piece = pos.Pieces[sq]
-		if piece != Empty {
+		if piece != Empty && piece != OffBoard {
 			Assert(piece >= WP && piece <= BK, "piece out of valid range")
 			finalKey ^= PieceKeys[piece][sq]
 		}

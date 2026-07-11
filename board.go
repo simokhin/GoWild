@@ -111,7 +111,7 @@ func ParseFEN(fen string, pos *Board) int {
 	}
 	i += 2
 
-	for k := 0; k < 4; k++ {
+	for range 4 {
 		if fen[i] == ' ' {
 			break
 		}
@@ -142,4 +142,52 @@ func ParseFEN(fen string, pos *Board) int {
 	pos.PosKey = GeneratePosKey(pos)
 
 	return 0
+}
+
+func PrintBoard(pos *Board) {
+	var sq Square
+	var file File
+	var rank Rank
+	var piece Piece
+
+	fmt.Println("\nGameBoard:")
+
+	for rank = Rank8; rank >= Rank1; rank-- {
+		fmt.Printf("%d ", int(rank)+1)
+		for file = FileA; file <= FileH; file++ {
+			sq = FR2SQ(file, rank)
+			piece = pos.Pieces[sq]
+			fmt.Printf("%3c", PceChar[piece])
+		}
+		fmt.Println()
+	}
+
+	fmt.Print("\n   ")
+	for file = FileA; file <= FileH; file++ {
+		fmt.Printf("%3c", FileChar[file])
+	}
+	fmt.Println()
+
+	fmt.Printf("side:%c\n", SideChar[pos.Side])
+	fmt.Printf("enPas:%d\n", pos.EnPas)
+
+	castleWK := byte('-')
+	if pos.CastlePerm&WKCA != 0 {
+		castleWK = 'K'
+	}
+	castleWQ := byte('-')
+	if pos.CastlePerm&WQCA != 0 {
+		castleWQ = 'Q'
+	}
+	castleBK := byte('-')
+	if pos.CastlePerm&BKCA != 0 {
+		castleBK = 'k'
+	}
+	castleBQ := byte('-')
+	if pos.CastlePerm&BQCA != 0 {
+		castleBQ = 'q'
+	}
+	fmt.Printf("castle:%c%c%c%c\n", castleWK, castleWQ, castleBK, castleBQ)
+
+	fmt.Printf("PosKey:%X\n", pos.PosKey)
 }
