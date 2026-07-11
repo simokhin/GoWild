@@ -23,6 +23,8 @@ const (
 	OffBoard
 )
 
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 // File represents a file (column) on the chessboard, from A (left) to H (right).
 type File int8
 
@@ -197,47 +199,60 @@ type Board struct {
 	PList [13][10]Square
 }
 
-// Count of all half-moves (plies) made since game start
+// HisPly returns the count of all half-moves (plies) made since game start.
 func (b *Board) HisPly() int {
 	return len(b.History)
 }
 
-// Translate file+rank (A1, B4 etc.) to square index
+// FR2SQ converts a file and rank into a 120-square mailbox board index.
+// The formula (21 + file + rank*10) places (0,0) at A1 = 21.
 func FR2SQ(file File, rank Rank) Square {
 	return Square(21 + int(file) + int(rank)*10)
 }
 
-var Sq120ToSq64 [120]int   // Maps a 120-square mailbox index to its 64-square index
-var Sq64ToSq120 [64]Square // Maps a 64-square index back to its 120-square mailbox index
+// Sq120ToSq64 maps a 120-square mailbox index to its corresponding 64-square index.
+// Off-board squares map to sentinel value offBoard (65).
+var Sq120ToSq64 [120]int
 
+// Sq64ToSq120 maps a 64-square index back to its corresponding 120-square mailbox index.
+var Sq64ToSq120 [64]Square
+
+// SQ64 converts a 120-square mailbox index to a 64-square board index.
 func SQ64(sq120 Square) int {
 	return Sq120ToSq64[sq120]
 }
 
+// SQ120 converts a 64-square board index back to a 120-square mailbox index.
 func SQ120(sq64 int) Square {
 	return Sq64ToSq120[sq64]
 }
 
+// POP removes and returns the index of the lowest set bit in the given bitboard.
+// This is a convenience wrapper around PopBit.
 func POP(bb *Bitboard) int {
 	return PopBit(bb)
 }
 
+// CNT returns the number of set bits (population count) in a bitboard.
 func CNT(b Bitboard) int {
 	return CountBits(b)
 }
 
-// Set a bit in the bitboard for the given square
+// SETBIT sets the bit corresponding to square sq in the bitboard.
 func SETBIT(bb *Bitboard, sq int) {
 	*bb |= SetMask[sq]
 }
 
-// Clear a bit in the bitboard for the given square
+// CLRBIT clears the bit corresponding to square sq in the bitboard.
 func CLRBIT(bb *Bitboard, sq int) {
 	*bb &= ClearMask[sq]
 }
 
+// Debug controls whether assertions are compiled in. Set to false for release builds.
 const Debug = true
 
+// Assert panics with the given message if condition is false, but only when
+// Debug is true. Intended for development-time invariant checking.
 func Assert(condition bool, message string) {
 	if !Debug {
 		return

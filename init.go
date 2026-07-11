@@ -2,25 +2,40 @@ package main
 
 import "math/rand"
 
-const offBoard = 65 // Sentinel value used to mark off-board squares in the 120-to-64 mapping
+// offBoard is the sentinel value used to mark off-board squares in the
+// 120-to-64 mapping table (Sq120ToSq64).
+const offBoard = 65
 
+// SetMask contains precomputed bitmasks with a single bit set at each 64-square index.
 var SetMask [64]Bitboard
+
+// ClearMask contains precomputed bitmasks with all bits set except one at each index.
 var ClearMask [64]Bitboard
 
+// PieceKeys holds Zobrist random numbers for each piece type at each 120-square index.
 var PieceKeys [13][120]Bitboard
+
+// SideKey is the Zobrist random number XORed into the hash when it is black's turn to move.
 var SideKey Bitboard
+
+// CastleKeys holds Zobrist random numbers for each of the 16 possible castling-rights states.
 var CastleKeys [16]Bitboard
 
+// AllInit initialises all lookup tables required by the engine: square mapping,
+// bit masks, and Zobrist hash keys. Must be called once at startup.
 func AllInit() {
 	InitSq120ToSq64()
 	InitBitMasks()
 	InitHashKeys()
 }
 
+// Rand64 generates a random 64-bit value for use as a Zobrist key component.
 func Rand64() Bitboard {
 	return Bitboard(rand.Uint64())
 }
 
+// InitHashKeys populates the Zobrist random number tables: piece-square keys,
+// side-to-move key, and castling rights keys.
 func InitHashKeys() {
 	for index := range 13 {
 		for index2 := range 120 {
@@ -33,6 +48,8 @@ func InitHashKeys() {
 	}
 }
 
+// InitBitMasks precomputes the SetMask and ClearMask tables for fast bitboard
+// bit manipulation. SetMask[i] has only bit i set; ClearMask[i] has all but bit i set.
 func InitBitMasks() {
 	for index := range 64 {
 		SetMask[index] = 0

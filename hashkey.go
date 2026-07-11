@@ -1,5 +1,8 @@
 package main
 
+// GeneratePosKey computes the Zobrist hash key for the current board position.
+// It XORs together piece-square keys, the side-to-move key, the en-passant
+// square key, and the castling rights key for a unique position fingerprint.
 func GeneratePosKey(pos *Board) uint64 {
 	var finalKey Bitboard = 0
 	var piece Piece = Empty

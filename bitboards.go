@@ -5,20 +5,23 @@ import (
 	"math/bits"
 )
 
-// Counts the number of set bits in a bitboard.
+// CountBits returns the number of set bits (population count) in a bitboard.
+// Uses the hardware-accelerated popcount instruction via math/bits.
 func CountBits(b Bitboard) int {
 	return bits.OnesCount64(uint64(b))
 }
 
-// PopBit removes and returns index of lowest set bit in a bitboard.
-// After calling, bb will have that bit cleared.
+// PopBit removes and returns the index of the lowest set bit in a bitboard.
+// After calling, bb will have that bit cleared via the classic x & (x-1) trick.
 func PopBit(bb *Bitboard) int {
 	index := bits.TrailingZeros64(uint64(*bb))
-	*bb &= *bb - 1 // снимаем этот бит
+	*bb &= *bb - 1 // Clear the lowest set bit
 	return index
 }
 
-// PrintBitBoard prints the board representation with X for set bits, - for empty squares.
+// PrintBitBoard prints a visual representation of a bitboard to stdout.
+// Set bits are shown as 'X', empty squares as '-', arranged in the standard
+// chessboard orientation (rank 8 at top, rank 1 at bottom).
 func PrintBitBoard(bb Bitboard) {
 	var shiftMe Bitboard = 1
 

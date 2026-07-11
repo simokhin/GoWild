@@ -1,5 +1,9 @@
 package main
 
+import "fmt"
+
+// ResetBoard clears a Board to its initial empty state: all squares set to
+// OffBoard (border) or Empty (inner 64), piece counts zeroed, and history reset.
 func ResetBoard(pos *Board) {
 	for index := range 120 {
 		pos.Pieces[index] = OffBoard
@@ -34,4 +38,108 @@ func ResetBoard(pos *Board) {
 	pos.PosKey = 0
 
 	pos.History = pos.History[:0]
+}
+
+func ParseFEN(fen string, pos *Board) int {
+	Assert(pos != nil, "pos must not be nil")
+
+	rank := Rank8
+	file := FileA
+	var piece Piece = 0
+	count := 0
+	i := 0
+
+	ResetBoard(pos)
+
+	for rank >= Rank1 && i < len(fen) {
+		count = 1
+
+		switch fen[i] {
+		case 'p':
+			piece = BP
+		case 'r':
+			piece = BR
+		case 'n':
+			piece = BN
+		case 'b':
+			piece = BB
+		case 'k':
+			piece = BK
+		case 'q':
+			piece = BQ
+		case 'P':
+			piece = WP
+		case 'R':
+			piece = WR
+		case 'N':
+			piece = WN
+		case 'B':
+			piece = WB
+		case 'K':
+			piece = WK
+		case 'Q':
+			piece = WQ
+		case '1', '2', '3', '4', '5', '6', '7', '8':
+			piece = Empty
+			count = int(fen[i] - '0')
+		case '/', ' ':
+			rank--
+			file = FileA
+			i++
+			continue
+		default:
+			fmt.Println("FEN error")
+			return -1
+		}
+
+		for j := 0; j < count; j++ {
+			sq64 := int(rank)*8 + int(file)
+			sq120 := SQ120(sq64)
+			if piece != Empty {
+				pos.Pieces[sq120] = piece
+			}
+			file++
+		}
+		i++
+	}
+
+	Assert(fen[i] == 'w' || fen[i] == 'b', "expected side to move")
+	if fen[i] == 'w' {
+		pos.Side = White
+	} else {
+		pos.Side = Black
+	}
+	i += 2
+
+	for k := 0; k < 4; k++ {
+		if fen[i] == ' ' {
+			break
+		}
+		switch fen[i] {
+		case 'K':
+			pos.CastlePerm |= WKCA
+		case 'Q':
+			pos.CastlePerm |= WQCA
+		case 'k':
+			pos.CastlePerm |= BKCA
+		case 'q':
+			pos.CastlePerm |= BQCA
+		}
+		i++
+	}
+	i++
+
+	Assert(pos.CastlePerm >= 0 && pos.CastlePerm <= 15, "castle perm out of range")
+
+	if fen[i] != '-' {
+		file = File(fen[i] - 'a')
+		rank = Rank(fen[i+1] - '1')
+		Assert(file >= FileA && file <= FileH, "file out of range")
+		Assert(rank >= Rank1 && rank <= Rank8, "rank out of range")
+		pos.EnPas = FR2SQ(file, rank)
+	}
+
+	pos.PosKey = GeneratePosKey(pos)
+
+	return 0
 }
