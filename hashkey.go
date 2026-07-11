@@ -1,6 +1,6 @@
 package main
 
-func GeneratePosKey(pos *Board) Bitboard {
+func GeneratePosKey(pos *Board) uint64 {
 	var finalKey Bitboard = 0
 	var piece Piece = Empty
 
@@ -26,5 +26,5 @@ func GeneratePosKey(pos *Board) Bitboard {
 
 	finalKey ^= CastleKeys[pos.CastlePerm]
 
-	return finalKey
+	return uint64(finalKey)
 }

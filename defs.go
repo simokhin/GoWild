@@ -20,6 +20,7 @@ const (
 	BR                 // Black Rook
 	BQ                 // Black Queen
 	BK                 // Black King
+	OffBoard
 )
 
 // File represents a file (column) on the chessboard, from A (left) to H (right).
@@ -181,12 +182,10 @@ type Board struct {
 	EnPas     Square // En passant square
 	FiftyMove int    // 50 moves rule count
 
-	Ply    int // Depth of current search
-	HisPly int // Count of all half-moves (plies) made since game start
-
+	Ply        int        // Depth of current search
 	CastlePerm CastlePerm // Bitmask of castling rights: which sides can castle which way
 
-	PosKey uint64 // Zobrist hash key uniquely indentifying the current position
+	PosKey uint64 // Zobrist hash key uniquely identifying the current position
 
 	PceNum [13]int // Count of each piece type on the board, indexed by Piece
 	BigPce [3]int  // Count of non-pawn pieces (per side + both)
@@ -196,6 +195,11 @@ type Board struct {
 	History []Undo
 
 	PList [13][10]Square
+}
+
+// Count of all half-moves (plies) made since game start
+func (b *Board) HisPly() int {
+	return len(b.History)
 }
 
 // Translate file+rank (A1, B4 etc.) to square index
@@ -208,6 +212,10 @@ var Sq64ToSq120 [64]Square // Maps a 64-square index back to its 120-square mail
 
 func SQ64(sq120 Square) int {
 	return Sq120ToSq64[sq120]
+}
+
+func SQ120(sq64 int) Square {
+	return Sq64ToSq120[sq64]
 }
 
 func POP(bb *Bitboard) int {
