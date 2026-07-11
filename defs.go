@@ -210,6 +210,24 @@ func SQ64(sq120 Square) int {
 	return Sq120ToSq64[sq120]
 }
 
+func POP(bb *Bitboard) int {
+	return PopBit(bb)
+}
+
+func CNT(b Bitboard) int {
+	return CountBits(b)
+}
+
+// Set a bit in the bitboard for the given square
+func SETBIT(bb *Bitboard, sq int) {
+	*bb |= SetMask[sq]
+}
+
+// Clear a bit in the bitboard for the given square
+func CLRBIT(bb *Bitboard, sq int) {
+	*bb &= ClearMask[sq]
+}
+
 const Debug = true
 
 func Assert(condition bool, message string) {

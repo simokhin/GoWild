@@ -9,14 +9,20 @@ func main() {
 
 	var playBitBoard Bitboard = 0
 
-	fmt.Println("Start:")
-	PrintBitBoard(playBitBoard)
-
 	playBitBoard |= 1 << SQ64(D2)
-	fmt.Println("D2 Added:")
+	playBitBoard |= 1 << SQ64(D3)
+	playBitBoard |= 1 << SQ64(D4)
+
 	PrintBitBoard(playBitBoard)
 
-	playBitBoard |= 1 << SQ64(H7)
-	fmt.Println("H7 Added:")
+	count := CNT(playBitBoard)
+
+	fmt.Printf("Count: %d\n", count)
+
+	index := POP(&playBitBoard)
+	fmt.Printf("Index: %d\n", index)
 	PrintBitBoard(playBitBoard)
+
+	count = CNT(playBitBoard)
+	fmt.Printf("Count: %d\n", count)
 }
