@@ -13,10 +13,14 @@ func ResetBoard(pos *Board) {
 		pos.Pieces[SQ120(index)] = Empty
 	}
 
-	for index := range 3 {
+	for index := range 2 {
 		pos.BigPce[index] = 0
 		pos.MajPce[index] = 0
 		pos.MinPce[index] = 0
+		pos.Material[index] = 0
+	}
+
+	for index := range 3 {
 		pos.Pawns[index] = 0
 	}
 
@@ -145,6 +149,8 @@ func ParseFEN(fen string, pos *Board) int {
 
 	pos.PosKey = GeneratePosKey(pos)
 
+	UpdateListsMaterial(pos)
+
 	return 0
 }
 
@@ -197,4 +203,41 @@ func PrintBoard(pos *Board) {
 	fmt.Printf("castle:%c%c%c%c\n", castleWK, castleWQ, castleBK, castleBQ)
 
 	fmt.Printf("PosKey:%X\n", pos.PosKey)
+}
+
+// UpdateListsMaterial walks the entire 120-square board and recomputes the
+// per-side piece lists (PList), piece counts (PceNum, BigPce, MajPce, MinPce),
+// material totals (Material), and king squares (KingSq).
+// Must be called after loading a position (e.g., after ParseFEN).
+func UpdateListsMaterial(pos *Board) {
+	for index := range 120 {
+		sq := index
+		piece := pos.Pieces[sq]
+
+		if piece != OffBoard && piece != Empty {
+			colour := PieceCol[piece]
+
+			if PieceBig[piece] {
+				pos.BigPce[colour]++
+			}
+			if PieceMin[piece] {
+				pos.MinPce[colour]++
+			}
+			if PieceMaj[piece] {
+				pos.MajPce[colour]++
+			}
+
+			pos.Material[colour] += PieceVal[piece]
+
+			pos.PList[piece][pos.PceNum[piece]] = Square(sq)
+			pos.PceNum[piece]++
+
+			if piece == WK {
+				pos.KingSq[White] = Square(sq)
+			}
+			if piece == BK {
+				pos.KingSq[Black] = Square(sq)
+			}
+		}
+	}
 }

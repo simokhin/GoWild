@@ -190,14 +190,15 @@ type Board struct {
 
 	PosKey uint64 // Zobrist hash key uniquely identifying the current position
 
-	PceNum [13]int // Count of each piece type on the board, indexed by Piece
-	BigPce [3]int  // Count of non-pawn pieces (per side + both)
-	MajPce [3]int  // Count of major pieces: rooks and queens (per side + both)
-	MinPce [3]int  // Count of minor pieces: knights and bishops (per side + both)
+	PceNum   [13]int // Count of each piece type on the board, indexed by Piece
+	BigPce   [2]int  // Count of non-pawn pieces (per side)
+	MajPce   [2]int  // Count of major pieces: rooks and queens (per side)
+	MinPce   [2]int  // Count of minor pieces: knights and bishops (per side)
+	Material [2]int  // Total material value of pieces in centipawns (per side)
 
-	History []Undo          // Move history stack for undoing moves (stores Undo snapshots)
+	History []Undo // Move history stack for undoing moves (stores Undo snapshots)
 
-	PList [13][10]Square    // Piece list: for each piece type (13), up to 10 squares where that piece sits
+	PList [13][10]Square // Piece list: for each piece type (13), up to 10 squares where that piece sits
 }
 
 // HisPly returns the count of all half-moves (plies) made since game start.
