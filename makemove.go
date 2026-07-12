@@ -209,7 +209,7 @@ func MakeMove(pos *Board, move int) bool {
 		case G1:
 			MovePiece(H1, F1, pos)
 		case G8:
-			MovePiece(H8, D8, pos)
+			MovePiece(H8, F8, pos)
 		default:
 			Assert(false, "invalid castle target square")
 		}

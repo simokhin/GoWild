@@ -3,7 +3,7 @@ package main
 // KnDir lists the 8 knight move offsets in the 120-square mailbox board.
 // For a knight at square S, the reachable squares are S+offsets[i].
 // Offsets that would wrap around the board edges are caught by the off-board border.
-var KnDir = [8]int{-8, -19, -21, 8, 19, 21, 12}
+var KnDir = [8]int{-8, -19, -21, -12, 8, 19, 21, 12}
 
 // RkDir lists the 4 rook move direction offsets (left, down, right, up)
 // in the 120-square mailbox board. Used for sliding-piece attack/move generation.
