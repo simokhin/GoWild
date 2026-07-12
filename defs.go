@@ -263,3 +263,23 @@ func Assert(condition bool, message string) {
 		panic(fmt.Sprintf("Assertion failed: %s", message))
 	}
 }
+
+// IsBQ returns true if the given piece is a bishop or queen (i.e., a diagonal slider).
+func IsBQ(p Piece) bool {
+	return PieceBishopQueen[p]
+}
+
+// IsRQ returns true if the given piece is a rook or queen (i.e., an orthogonal slider).
+func IsRQ(p Piece) bool {
+	return PieceRookQueen[p]
+}
+
+// IsKn returns true if the given piece is a knight.
+func IsKn(p Piece) bool {
+	return PieceKnight[p]
+}
+
+// IsKi returns true if the given piece is a king.
+func IsKi(p Piece) bool {
+	return PieceKing[p]
+}

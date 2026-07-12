@@ -50,3 +50,45 @@ var PieceCol = [13]Color{
 	Both, White, White, White, White, White, White,
 	Black, Black, Black, Black, Black, Black,
 }
+
+// PiecePawn marks piece types that are pawns.
+// Index by Piece: pawns are true, all others false.
+var PiecePawn = [13]bool{
+	false, true, false, false, false, false, false,
+	true, false, false, false, false, false,
+}
+
+// PieceKnight marks piece types that are knights.
+// Index by Piece: knights are true, all others false.
+var PieceKnight = [13]bool{
+	false, false, true, false, false, false, false,
+	false, true, false, false, false, false,
+}
+
+// PieceKing marks piece types that are kings.
+// Index by Piece: kings are true, all others false.
+var PieceKing = [13]bool{
+	false, false, false, false, false, false, true,
+	false, false, false, false, false, true,
+}
+
+// PieceRookQueen marks piece types that can slide along ranks and files (rooks and queens).
+// Index by Piece: rooks and queens are true, all others false.
+var PieceRookQueen = [13]bool{
+	false, false, false, false, true, true, false,
+	false, false, false, true, true, false,
+}
+
+// PieceBishopQueen marks piece types that can slide along diagonals (bishops and queens).
+// Index by Piece: bishops and queens are true, all others false.
+var PieceBishopQueen = [13]bool{
+	false, false, false, true, false, true, false,
+	false, false, true, false, true, false,
+}
+
+// PieceSlides marks piece types that slide (bishops, rooks, queens).
+// Index by Piece: bishops, rooks, and queens are true; all others false.
+var PieceSlides = [13]bool{
+	false, false, false, true, true, true, false,
+	false, false, true, true, true, false,
+}
