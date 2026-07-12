@@ -4,12 +4,15 @@ package main
 // For a knight at square S, the reachable squares are S+offsets[i].
 // Offsets that would wrap around the board edges are caught by the off-board border.
 var KnDir = [8]int{-8, -19, -21, 8, 19, 21, 12}
+
 // RkDir lists the 4 rook move direction offsets (left, down, right, up)
 // in the 120-square mailbox board. Used for sliding-piece attack/move generation.
 var RkDir = [4]int{-1, -10, 1, 10}
+
 // BiDir lists the 4 bishop move direction offsets (down-left, down-right, up-left, up-right)
 // in the 120-square mailbox board. Used for sliding-piece attack/move generation.
 var BiDir = [4]int{-9, -11, 11, 9}
+
 // KiDir lists the 8 king move direction offsets (non-sliding, one step in each direction).
 // Combines rook directions and bishop directions for the king's full movement set.
 var KiDir = [8]int{-1, -10, 1, 10, -9, -11, 11, 9}
@@ -19,6 +22,10 @@ var KiDir = [8]int{-1, -10, 1, 10, -9, -11, 11, 9}
 // sliding pieces (rooks/queens along ranks/files, bishops/queens along diagonals),
 // and finally king attacks (8 directions).
 func SqAttacked(sq Square, side Color, pos *Board) bool {
+	Assert(SqOnBoard(sq), "square not on board")
+	Assert(SideValid(side), "invalid side")
+	Assert(CheckBoard(pos), "board check failed")
+
 	var piece Piece
 	var index int
 	var tSq Square

@@ -34,3 +34,18 @@ func PrMove(move int) string {
 
 	return moveStr
 }
+
+// PrintMoveList prints all moves in a MoveList to stdout, one per line.
+// Each line shows the move index, algebraic notation (via PrMove), and the
+// search score. The total move count is printed at the end.
+func PrintMoveList(list *MoveList) {
+	fmt.Println("MoveList:")
+
+	for index := 0; index < list.Count; index++ {
+		move := list.Moves[index].MoveInt
+		score := list.Moves[index].Score
+
+		fmt.Printf("Move:%d > %s (score:%d)\n", index+1, PrMove(move), score)
+	}
+	fmt.Printf("MoveList Total %d Moves:\n\n", list.Count)
+}

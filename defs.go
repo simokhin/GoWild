@@ -2,6 +2,31 @@ package main
 
 import "fmt"
 
+// ---- Constants ----
+
+// START_FEN is the Forsyth–Edwards Notation string for the standard initial chess position.
+const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+// MaxGameMoves is the maximum number of half-moves we store in the history.
+const MaxGameMoves = 2048
+
+// MaxPositionMoves is the maximum number of moves per position in the move list.
+const MaxPositionMoves = 256
+
+// Debug controls whether assertions are compiled in. Set to false for release builds.
+const Debug = true
+
+// Move encoding bit flags and masks.
+const (
+	MFlagEP   = 0x40000   // En passant capture flag (bit 18)
+	MFlagPS   = 0x80000   // Pawn start / double-push flag (bit 19)
+	MFlagCA   = 0x1000000 // Castle flag (bit 24)
+	MFlagCap  = 0x7C000   // Mask for the captured piece field (bits 14–17)
+	MFlagProm = 0xF00000  // Mask for the promoted piece field (bits 20–23)
+)
+
+// ---- Types ----
+
 // Piece represents a chess piece type.
 // The values are used internally in the 120-square mailbox board.
 type Piece int8
@@ -22,9 +47,6 @@ const (
 	BK                 // Black King
 	OffBoard
 )
-
-// START_FEN is the Forsyth–Edwards Notation string for the standard initial chess position.
-const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 // File represents a file (column) on the chessboard, from A (left) to H (right).
 type File int8
@@ -69,13 +91,6 @@ const (
 // The border squares (ranks 0, 9 and files 0, 9) are off-board padding
 // used to quickly detect moves that leave the board.
 type Square int8
-
-// Move represents a chess move encoded as a 28-bit integer (MoveInt) paired with a
-// Score used for move ordering during search (e.g., MVV-LVA or history heuristic).
-type Move struct {
-	MoveInt int
-	Score   int
-}
 
 const (
 	A1 Square = 21
@@ -163,8 +178,16 @@ const (
 	BQCA CastlePerm = 8 // Black queenside castle available
 )
 
-// MaxGameMoves is the maximum number of half-moves we store in the history.
-const MaxGameMoves = 2048
+// Bitboard is a 64-bit mask representing a set of squares on the board.
+// Bit 0 = A1, bit 63 = H8.
+type Bitboard uint64
+
+// Move represents a chess move encoded as a 28-bit integer (MoveInt) paired with a
+// Score used for move ordering during search (e.g., MVV-LVA or history heuristic).
+type Move struct {
+	MoveInt int
+	Score   int
+}
 
 // Undo stores the board state before a move, so we can take it back.
 type Undo struct {
@@ -174,10 +197,6 @@ type Undo struct {
 	FiftyMove  int        // 50-move rule counter before the move
 	PosKey     uint64     // Zobrist hash key of the position before the move
 }
-
-// Bitboard is a 64-bit mask representing a set of squares on the board.
-// Bit 0 = A1, bit 63 = H8.
-type Bitboard uint64
 
 // Board holds the complete state of a chess position.
 // It uses a 120-square mailbox representation for fast move generation.
@@ -208,16 +227,13 @@ type Board struct {
 	PList [13][10]Square // Piece list: for each piece type (13), up to 10 squares where that piece sits
 }
 
-// HisPly returns the count of all half-moves (plies) made since game start.
-func (b *Board) HisPly() int {
-	return len(b.History)
+// MoveList holds a list of legal moves for a position, used during search.
+type MoveList struct {
+	Moves [MaxPositionMoves]Move
+	Count int
 }
 
-// FR2SQ converts a file and rank into a 120-square mailbox board index.
-// The formula (21 + file + rank*10) places (0,0) at A1 = 21.
-func FR2SQ(file File, rank Rank) Square {
-	return Square(21 + int(file) + int(rank)*10)
-}
+// ---- Variables ----
 
 // Sq120ToSq64 maps a 120-square mailbox index to its corresponding 64-square index.
 // Off-board squares map to sentinel value offBoard (65).
@@ -225,6 +241,21 @@ var Sq120ToSq64 [120]int
 
 // Sq64ToSq120 maps a 64-square index back to its corresponding 120-square mailbox index.
 var Sq64ToSq120 [64]Square
+
+// ---- Board Methods ----
+
+// HisPly returns the count of all half-moves (plies) made since game start.
+func (b *Board) HisPly() int {
+	return len(b.History)
+}
+
+// ---- Square Conversion Functions ----
+
+// FR2SQ converts a file and rank into a 120-square mailbox board index.
+// The formula (21 + file + rank*10) places (0,0) at A1 = 21.
+func FR2SQ(file File, rank Rank) Square {
+	return Square(21 + int(file) + int(rank)*10)
+}
 
 // SQ64 converts a 120-square mailbox index to a 64-square board index.
 func SQ64(sq120 Square) int {
@@ -235,6 +266,8 @@ func SQ64(sq120 Square) int {
 func SQ120(sq64 int) Square {
 	return Sq64ToSq120[sq64]
 }
+
+// ---- Bitboard Utility Functions ----
 
 // POP removes and returns the index of the lowest set bit in the given bitboard.
 // This is a convenience wrapper around PopBit.
@@ -257,8 +290,7 @@ func CLRBIT(bb *Bitboard, sq int) {
 	*bb &= ClearMask[sq]
 }
 
-// Debug controls whether assertions are compiled in. Set to false for release builds.
-const Debug = true
+// ---- Debug / Assert ----
 
 // Assert panics with the given message if condition is false, but only when
 // Debug is true. Intended for development-time invariant checking.
@@ -270,6 +302,8 @@ func Assert(condition bool, message string) {
 		panic(fmt.Sprintf("Assertion failed: %s", message))
 	}
 }
+
+// ---- Piece Type Queries ----
 
 // IsBQ returns true if the given piece is a bishop or queen (i.e., a diagonal slider).
 func IsBQ(p Piece) bool {
@@ -290,6 +324,8 @@ func IsKn(p Piece) bool {
 func IsKi(p Piece) bool {
 	return PieceKing[p]
 }
+
+// ---- Move Encoding / Decoding ----
 
 /*
 	0000 0000 0000 0000 0111 1111 -> From 0x7F
@@ -326,11 +362,3 @@ func Captured(m int) Piece {
 func Promoted(m int) Piece {
 	return Piece((m >> 20) & 0xF)
 }
-
-const (
-	MFlagEP   = 0x40000   // En passant capture flag (bit 18)
-	MFlagPS   = 0x80000   // Pawn start / double-push flag (bit 19)
-	MFlagCA   = 0x1000000 // Castle flag (bit 24)
-	MFlagCap  = 0x7C000   // Mask for the captured piece field (bits 14–17)
-	MFlagProm = 0xF00000  // Mask for the promoted piece field (bits 20–23)
-)
