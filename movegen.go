@@ -1,5 +1,65 @@
 package main
 
+import "fmt"
+
+// LoopSlidePce is the iteration order for sliding pieces, arranged as white bishop,
+// rook, queen followed by black bishop, rook, queen. Empty entries act as sentinel
+// terminators (the loop stops when piece == Empty).
+var LoopSlidePce = [8]Piece{WB, WR, WQ, Empty, BB, BR, BQ, Empty}
+
+// LoopNonSlidePce is the iteration order for non-sliding pieces, arranged as white
+// knight, king followed by black knight, king. Empty entries act as terminators.
+var LoopNonSlidePce = [6]Piece{WN, WK, Empty, BN, BK, Empty}
+
+// LoopSlideIndex stores the start index into LoopSlidePce for each side:
+// [White]=0, [Black]=4 (skipping the white block and its Empty terminator).
+var LoopSlideIndex = [2]int{0, 4}
+
+// LoopNonSlideIndex stores the start index into LoopNonSlidePce for each side:
+// [White]=0, [Black]=3 (skipping the white block and its Empty terminator).
+var LoopNonSlideIndex = [2]int{0, 3}
+
+// PceDir maps each piece type (indexed by Piece constant) to its possible move
+// direction offsets on the 120-square mailbox board. The offsets represent the
+// delta added to a square index to move one step in a given direction:
+//   -1 = west, +1 = east, -10 = north, +10 = south,
+//   -11 = north-west, -9 = north-east, +11 = south-east, +9 = south-west.
+// Knights use the 8 L-shaped offsets; bishops use 4 diagonals; rooks use 4
+// orthogonals; queens and kings use all 8; pawns and Empty use zero-filled rows.
+var PceDir = [13][8]int{
+	{0, 0, 0, 0, 0, 0, 0, 0}, // Empty
+	{0, 0, 0, 0, 0, 0, 0, 0}, // WP (handled separately)
+	{-8, -19, -21, -12, 8, 19, 21, 12}, // WN
+	{-9, -11, 11, 9, 0, 0, 0, 0},       // WB
+	{-1, -10, 1, 10, 0, 0, 0, 0},       // WR
+	{-1, -10, 1, 10, -9, -11, 11, 9},   // WQ
+	{-1, -10, 1, 10, -9, -11, 11, 9},   // WK
+	{0, 0, 0, 0, 0, 0, 0, 0},           // BP (handled separately)
+	{-8, -19, -21, -12, 8, 19, 21, 12}, // BN
+	{-9, -11, 11, 9, 0, 0, 0, 0},       // BB
+	{-1, -10, 1, 10, 0, 0, 0, 0},       // BR
+	{-1, -10, 1, 10, -9, -11, 11, 9},   // BQ
+	{-1, -10, 1, 10, -9, -11, 11, 9},   // BK
+}
+
+// NumDir stores the number of valid direction offsets for each piece type.
+// Knights have 8, bishops 4, rooks 4, queens and kings 8; pawns and Empty have 0.
+var NumDir = [13]int{
+	0, // Empty
+	0, // WP
+	8, // WN
+	4, // WB
+	4, // WR
+	8, // WQ
+	8, // WK
+	0, // BP
+	8, // BN
+	4, // BB
+	4, // BR
+	8, // BQ
+	8, // BK
+}
+
 // AddQuietMove appends a non-capture move to the move list. The score is set to
 // 0 by default (move ordering is handled later by the search).
 func AddQuietMove(pos *Board, move int, list *MoveList) {
@@ -25,17 +85,21 @@ func AddEnPassantMove(pos *Board, move int, list *MoveList) {
 }
 
 // GenerateAllMoves generates all pseudo-legal moves for the given position and stores
-// them in the move list. Currently generates pawn moves (single pushes, double pushes,
-// captures, en passant, and promotions) for the side to move. Knight, bishop, rook,
-// queen, king, and castling move generation will be added here.
+// them in the move list. Generates pawn moves (single pushes, double pushes, captures,
+// en passant, and promotions), sliding piece moves (bishops, rooks, queens), and
+// non-sliding piece moves (knights, kings). Castling move generation will be added here.
 func GenerateAllMoves(pos *Board, list *MoveList) {
 	Assert(CheckBoard(pos), "board check failed")
 
 	list.Count = 0
 
 	side := pos.Side
-	var sq Square
+	var sq, tSq Square
 	var pceNum int
+
+	dir := 0
+	index := 0
+	pceIndex := 0
 
 	if side == White {
 		for pceNum = 0; pceNum < pos.PceNum[WP]; pceNum++ {
@@ -92,6 +156,86 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 			}
 		}
 	}
+
+	// Generate sliding piece moves (bishops, rooks, queens) by ray-casting along each
+	// direction offset until hitting a board edge or another piece. Captures are added
+	// for enemy pieces; friendly pieces block further movement on that ray.
+
+	pceIndex = LoopSlideIndex[side]
+	piece := LoopSlidePce[pceIndex]
+	pceIndex++
+	for piece != Empty {
+		Assert(PieceValid(piece), "invalid piece")
+		fmt.Printf("sliders pceIndex:%d pce:%d\n", pceIndex, piece)
+
+		for pceNum = 0; pceNum < pos.PceNum[piece]; pceNum++ {
+			sq = pos.PList[piece][pceNum]
+			Assert(SqOnBoard(sq), "square not on board")
+			fmt.Printf("Piece:%c on %s\n", PceChar[piece], PrSq(sq))
+
+			for index = 0; index < NumDir[piece]; index++ {
+				dir = PceDir[piece][index]
+				tSq = sq + Square(dir)
+
+				for !SqOffBoard(tSq) {
+					if pos.Pieces[tSq] != Empty {
+						if PieceCol[pos.Pieces[tSq]] == side^1 {
+							fmt.Printf("\t\tCapture on %s\n", PrSq(tSq))
+							AddCaptureMove(pos, EncodeMove(int(sq), int(tSq), pos.Pieces[tSq], Empty, 0), list)
+						}
+						break
+					}
+					fmt.Printf("\t\tNormal on %s\n", PrSq(tSq))
+					AddQuietMove(pos, EncodeMove(int(sq), int(tSq), Empty, Empty, 0), list)
+					tSq += Square(dir)
+				}
+			}
+		}
+
+		piece = LoopSlidePce[pceIndex]
+		pceIndex++
+	}
+
+	// Generate non-sliding piece moves (knights, kings) by testing each single-step
+	// direction offset. Only one step is taken per direction; captures are added for
+	// enemy pieces, blocked squares are skipped.
+
+	pceIndex = LoopNonSlideIndex[side]
+	piece = LoopNonSlidePce[pceIndex]
+	pceIndex++
+	for piece != Empty {
+		Assert(PieceValid(piece), "invalid piece")
+		fmt.Printf("non sliders pceIndex:%d pce:%d\n", pceIndex, piece)
+
+		for pceNum = 0; pceNum < pos.PceNum[piece]; pceNum++ {
+			sq = pos.PList[piece][pceNum]
+			Assert(SqOnBoard(sq), "square not on board")
+			fmt.Printf("Piece:%c on %s\n", PceChar[piece], PrSq(sq))
+
+			for index = 0; index < NumDir[piece]; index++ {
+				dir = PceDir[piece][index]
+				tSq = sq + Square(dir)
+
+				if SqOffBoard(tSq) {
+					continue
+				}
+
+				// BLACK ^ 1 == WHITE WHITE ^ 1 == BLACK
+				if pos.Pieces[tSq] != Empty {
+					if PieceCol[pos.Pieces[tSq]] == side^1 {
+						fmt.Printf("\t\tCapture on %s\n", PrSq(tSq))
+						AddCaptureMove(pos, EncodeMove(int(sq), int(tSq), pos.Pieces[tSq], Empty, 0), list)
+					}
+					continue
+				}
+				fmt.Printf("\t\tNormal on %s\n", PrSq(tSq))
+				AddQuietMove(pos, EncodeMove(int(sq), int(tSq), Empty, Empty, 0), list)
+			}
+		}
+
+		piece = LoopNonSlidePce[pceIndex]
+		pceIndex++
+	}
 }
 
 // AddWhitePawnCapMove generates all capture moves for a white pawn moving from
@@ -99,6 +243,11 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 // (Rank7), it generates promotion captures for queen, rook, bishop, and knight.
 // Otherwise it adds a single standard pawn capture.
 func AddWhitePawnCapMove(pos *Board, from, to int, cap Piece, list *MoveList) {
+
+	Assert(PieceValidEmpty(cap), "capture piece invalid or off range")
+	Assert(SqOnBoard(Square(from)), "from square not on board")
+	Assert(SqOnBoard(Square(to)), "to square not on board")
+
 	if RanksBrd[from] == Rank7 {
 		AddCaptureMove(pos, EncodeMove(from, to, cap, WQ, 0), list)
 		AddCaptureMove(pos, EncodeMove(from, to, cap, WR, 0), list)
@@ -114,6 +263,11 @@ func AddWhitePawnCapMove(pos *Board, from, to int, cap Piece, list *MoveList) {
 // (Rank2), it generates promotion captures for queen, rook, bishop, and knight.
 // Otherwise it adds a single standard pawn capture.
 func AddBlackPawnCapMove(pos *Board, from, to int, cap Piece, list *MoveList) {
+
+	Assert(PieceValidEmpty(cap), "capture piece invalid or off range")
+	Assert(SqOnBoard(Square(from)), "from square not on board")
+	Assert(SqOnBoard(Square(to)), "to square not on board")
+
 	if RanksBrd[from] == Rank2 {
 		AddCaptureMove(pos, EncodeMove(from, to, cap, BQ, 0), list)
 		AddCaptureMove(pos, EncodeMove(from, to, cap, BR, 0), list)
@@ -129,6 +283,10 @@ func AddBlackPawnCapMove(pos *Board, from, to int, cap Piece, list *MoveList) {
 // generates four promotion variants (queen, rook, bishop, knight). Otherwise it
 // adds a single forward push.
 func AddWhitePawnMove(pos *Board, from, to int, list *MoveList) {
+
+	Assert(SqOnBoard(Square(from)), "from square not on board")
+	Assert(SqOnBoard(Square(to)), "to square not on board")
+
 	if RanksBrd[from] == Rank7 {
 		AddCaptureMove(pos, EncodeMove(from, to, Empty, WQ, 0), list)
 		AddCaptureMove(pos, EncodeMove(from, to, Empty, WR, 0), list)
@@ -145,6 +303,10 @@ func AddWhitePawnMove(pos *Board, from, to int, list *MoveList) {
 // generates four promotion variants (queen, rook, bishop, knight). Otherwise it
 // adds a single forward push.
 func AddBlackPawnMove(pos *Board, from, to int, list *MoveList) {
+
+	Assert(SqOnBoard(Square(from)), "from square not on board")
+	Assert(SqOnBoard(Square(to)), "to square not on board")
+
 	if RanksBrd[from] == Rank2 {
 		AddCaptureMove(pos, EncodeMove(from, to, Empty, BQ, 0), list)
 		AddCaptureMove(pos, EncodeMove(from, to, Empty, BR, 0), list)
@@ -158,8 +320,9 @@ func AddBlackPawnMove(pos *Board, from, to int, list *MoveList) {
 
 // EncodeMove packs a move's from-square, to-square, captured piece, promoted piece,
 // and a flag into a single 28-bit integer using bit shifts:
-//   from-square in bits 0–6, to-square in bits 7–13, captured in bits 14–17,
-//   promoted piece in bits 20–23, and the move flag (e.g., EP, PS, CA) in bit 18+.
+//
+//	from-square in bits 0–6, to-square in bits 7–13, captured in bits 14–17,
+//	promoted piece in bits 20–23, and the move flag (e.g., EP, PS, CA) in bit 18+.
 func EncodeMove(f, t int, ca, pro Piece, f1 int) int {
 	return f | (t << 7) | (int(ca) << 14) | (int(pro) << 20) | f1
 }
