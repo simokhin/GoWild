@@ -348,7 +348,7 @@ func TakeMove(pos *Board) {
 	MovePiece(Square(to), Square(from), pos)
 
 	if PieceKing[pos.Pieces[from]] {
-		pos.KingSq[pos.Side] = Square(to)
+		pos.KingSq[pos.Side] = Square(from)
 	}
 
 	captured := Captured(move)
