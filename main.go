@@ -26,40 +26,37 @@ var FEN5 = "8/3q4/8/8/4Q3/8/8/8 w - - 0 2"
 func main() {
 	AllInit()
 
-	board := &Board{}
+	// Encode a test move by packing from-square, to-square, captured piece,
+	// and promoted piece into a single 28-bit integer using bit shifts.
+	// This validates the move encoding/decoding scheme used throughout the engine.
+	move := 0
+	from := 6
+	to := 12
+	cap := WR
+	prom := BR
 
-	ParseFEN(FEN3, board)
-	PrintBoard(board)
+	move = from | (to << 7) | (int(cap) << 14) | (int(prom) << 20)
 
-	// CheckBoard(board)
+	fmt.Printf("\ndec:%d hex:%X\n", move, move)
+	PrintBin(move)
 
-	fmt.Println("\n\nWhite Attacking:")
-	ShowSqAtBySide(White, board)
+	fmt.Printf("from:%d to:%d cap:%d prom:%d\n", FromSq(move), ToSq(move), Captured(move), Promoted(move))
 
-	fmt.Println("\n\nBlack Attacking")
-	ShowSqAtBySide(Black, board)
 }
 
-// ShowSqAtBySide prints an 8x8 board of X and - characters showing which squares
-// are attacked by the given side. Used for visually debugging attack detection.
-func ShowSqAtBySide(side Color, pos *Board) {
-	var rank Rank
-	var file File
-	var sq Square
-
-	fmt.Printf("\n\nSquares attacked by: %c\n", SideChar[side])
-
-	for rank = Rank8; rank >= Rank1; rank-- {
-		for file = FileA; file <= FileH; file++ {
-			sq = FR2SQ(file, rank)
-			if SqAttacked(sq, side, pos) {
-				fmt.Print("X")
-			} else {
-				fmt.Print("-")
-			}
+// PrintBin prints the binary representation of a move integer, grouped
+// in 4-bit nibbles for readability. Used for debugging move encoding.
+func PrintBin(move int) {
+	fmt.Println("As binary:")
+	for index := 27; index >= 0; index-- {
+		if (1<<index)&move != 0 {
+			fmt.Print("1")
+		} else {
+			fmt.Print("0")
 		}
-		fmt.Println()
+		if index != 28 && index%4 == 0 {
+			fmt.Print(" ")
+		}
 	}
-	fmt.Println()
 	fmt.Println()
 }

@@ -70,6 +70,13 @@ const (
 // used to quickly detect moves that leave the board.
 type Square int8
 
+// Move represents a chess move encoded as a 28-bit integer (MoveInt) paired with a
+// Score used for move ordering during search (e.g., MVV-LVA or history heuristic).
+type Move struct {
+	MoveInt int
+	Score   int
+}
+
 const (
 	A1 Square = 21
 	B1 Square = 22
@@ -283,3 +290,47 @@ func IsKn(p Piece) bool {
 func IsKi(p Piece) bool {
 	return PieceKing[p]
 }
+
+/*
+	0000 0000 0000 0000 0111 1111 -> From 0x3F
+	0000 0000 0011 1111 1000 0000 -> To >> 7, 0x3F
+	0000 0000 0011 1100 0000 0000 -> Captured >> 14, 0xF
+	0000 0000 0100 0000 0000 0000 -> EP 0x40000
+	0000 0000 1000 0000 0000 0000 -> Pawn Start 0x80000
+	0000 1111 0000 0000 0000 0000 -> Promoted Piece >> 20, 0xF
+	0001 0000 0000 0000 0000 0000 -> Castle 0x1000000
+*/
+
+// FromSq extracts the origin square (0–63) from an encoded move integer.
+// Bits 0–6 hold the from-square index, masked with 0x3F.
+func FromSq(m int) int {
+	return m & 0x3F
+}
+
+// ToSq extracts the destination square (0–63) from an encoded move integer.
+// Bits 7–13 (shifted right by 7) hold the to-square index, masked with 0x3F.
+func ToSq(m int) int {
+	return (m >> 7) & 0x3F
+}
+
+// Captured extracts the captured piece type from an encoded move integer.
+// Bits 14–17 (shifted right by 14) hold the captured piece, masked with 0xF.
+// Returns Empty if the move is not a capture.
+func Captured(m int) Piece {
+	return Piece((m >> 14) & 0xF)
+}
+
+// Promoted extracts the promotion piece type from an encoded move integer.
+// Bits 20–23 (shifted right by 20) hold the promoted piece, masked with 0xF.
+// Returns Empty if the move is not a promotion.
+func Promoted(m int) Piece {
+	return Piece((m >> 20) & 0xF)
+}
+
+const (
+	MFlagEP   = 0x40000   // En passant capture flag (bit 18)
+	MFlagPS   = 0x80000   // Pawn start / double-push flag (bit 19)
+	MFlagCA   = 0x1000000 // Castle flag (bit 24)
+	MFlagCap  = 0x7C000   // Mask for the captured piece field (bits 14–17)
+	MFlagProm = 0xF00000  // Mask for the promoted piece field (bits 20–23)
+)
