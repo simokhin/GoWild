@@ -2,6 +2,107 @@ package main
 
 import "fmt"
 
+// CheckBoard verifies the integrity of a Board struct. It cross-checks the piece lists
+// (PList) against the mailbox board (Pieces), counts all pieces by type/colour/material,
+// validates pawn bitboards, and checks the Zobrist position key, en passant square,
+// king squares, and side to move. Returns true on success; panics on any mismatch
+// (when Debug is enabled).
+func CheckBoard(pos *Board) bool {
+	var tPceNum [13]int
+	var tBigPce [2]int
+	var tMajPce [2]int
+	var tMinPce [2]int
+	var tMaterial [2]int
+
+	var sq64 int
+	var tPiece Piece
+	var sq120 Square
+	var colour Color
+	var pcount int
+
+	tPawns := [3]Bitboard{0, 0, 0}
+
+	tPawns[White] = pos.Pawns[White]
+	tPawns[Black] = pos.Pawns[Black]
+	tPawns[Both] = pos.Pawns[Both]
+
+	for tPiece := WP; tPiece <= BK; tPiece++ {
+		for tPceNum := 0; tPceNum < pos.PceNum[tPiece]; tPceNum++ {
+			sq120 = pos.PList[tPiece][tPceNum]
+			Assert(pos.Pieces[sq120] == tPiece, "piece list inconsistent with board")
+		}
+	}
+
+	for sq64 = range 64 {
+		sq120 = SQ120(sq64)
+		tPiece = pos.Pieces[sq120]
+		if tPiece == Empty {
+			continue
+		}
+		tPceNum[tPiece]++
+		colour = PieceCol[tPiece]
+		if PieceBig[tPiece] {
+			tBigPce[colour]++
+		}
+		if PieceMin[tPiece] {
+			tMinPce[colour]++
+		}
+		if PieceMaj[tPiece] {
+			tMajPce[colour]++
+		}
+		tMaterial[colour] += PieceVal[tPiece]
+	}
+
+	for tPiece = WP; tPiece <= BK; tPiece++ {
+		Assert(tPceNum[tPiece] == pos.PceNum[tPiece], "piece count mismatch")
+	}
+
+	// Verify that pawn bitboard population counts match the piece-list counts
+	pcount = CNT(tPawns[White])
+	Assert(pcount == pos.PceNum[WP], "white pawn bitboard count mismatch")
+
+	pcount = CNT(tPawns[Black])
+	Assert(pcount == pos.PceNum[BP], "black pawn bitboard count mismatch")
+
+	pcount = CNT(tPawns[Both])
+	Assert(pcount == pos.PceNum[BP]+pos.PceNum[WP], "combined pawn bitboard count mismatch")
+
+	// Verify that each set bit in the White pawn bitboard actually holds a White pawn
+	for tPawns[White] != 0 {
+		sq64 = POP(&tPawns[White])
+		Assert(pos.Pieces[SQ120(sq64)] == WP, "white pawn bitboard square mismatch")
+	}
+
+	// Verify that each set bit in the Black pawn bitboard actually holds a Black pawn
+	for tPawns[Black] != 0 {
+		sq64 = POP(&tPawns[Black])
+		Assert(pos.Pieces[SQ120(sq64)] == BP, "black pawn bitboard square mismatch")
+	}
+
+	// Verify that each set bit in the combined pawn bitboard actually holds a pawn of either colour
+	for tPawns[Both] != 0 {
+		sq64 = POP(&tPawns[Both])
+		Assert(pos.Pieces[SQ120(sq64)] == BP || pos.Pieces[SQ120(sq64)] == WP, "combined pawn bitboard square mismatch")
+	}
+
+	Assert(tMaterial[White] == pos.Material[White] && tMaterial[Black] == pos.Material[Black], "material count mismatch")
+	Assert(tMinPce[White] == pos.MinPce[White] && tMinPce[Black] == pos.MinPce[Black], "minor count mismatch")
+	Assert(tMajPce[White] == pos.MajPce[White] && tMajPce[Black] == pos.MajPce[Black], "major count mismatch")
+	Assert(tBigPce[White] == pos.BigPce[White] && tBigPce[Black] == pos.BigPce[Black], "big count mismatch")
+
+	Assert(pos.Side == White || pos.Side == Black, "side must be white or black")
+	Assert(GeneratePosKey(pos) == pos.PosKey, "position key mismatch")
+
+	Assert(pos.EnPas == NoSquare ||
+		(RanksBrd[pos.EnPas] == Rank6 && pos.Side == White) ||
+		(RanksBrd[pos.EnPas] == Rank3 && pos.Side == Black), "en passant square inconsistent with side to move")
+
+	Assert(pos.Pieces[pos.KingSq[White]] == WK, "white king square mismatch")
+	Assert(pos.Pieces[pos.KingSq[Black]] == BK, "black king square mismatch")
+
+	return true
+}
+
 // ResetBoard clears a Board to its initial empty state: all squares set to
 // OffBoard (border) or Empty (inner 64), piece counts zeroed, and history reset.
 func ResetBoard(pos *Board) {
@@ -211,7 +312,7 @@ func PrintBoard(pos *Board) {
 // Must be called after loading a position (e.g., after ParseFEN).
 func UpdateListsMaterial(pos *Board) {
 	for index := range 120 {
-		sq := index
+		sq := Square(index)
 		piece := pos.Pieces[sq]
 
 		if piece != OffBoard && piece != Empty {
@@ -237,6 +338,15 @@ func UpdateListsMaterial(pos *Board) {
 			}
 			if piece == BK {
 				pos.KingSq[Black] = Square(sq)
+			}
+
+			switch piece {
+			case WP:
+				SETBIT(&pos.Pawns[White], SQ64(sq))
+				SETBIT(&pos.Pawns[Both], SQ64(sq))
+			case BP:
+				SETBIT(&pos.Pawns[Black], SQ64(sq))
+				SETBIT(&pos.Pawns[Both], SQ64(sq))
 			}
 		}
 	}

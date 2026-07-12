@@ -1,6 +1,8 @@
 package main
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 // offBoard is the sentinel value used to mark off-board squares in the
 // 120-to-64 mapping table (Sq120ToSq64).
@@ -21,12 +23,37 @@ var SideKey Bitboard
 // CastleKeys holds Zobrist random numbers for each of the 16 possible castling-rights states.
 var CastleKeys [16]Bitboard
 
+// FilesBrd maps each 120-square index to its file (FileA–FileH), or FileNone for off-board squares.
+var FilesBrd [120]File
+
+// RanksBrd maps each 120-square index to its rank (Rank1–Rank8), or RankNone for off-board squares.
+var RanksBrd [120]Rank
+
 // AllInit initialises all lookup tables required by the engine: square mapping,
 // bit masks, and Zobrist hash keys. Must be called once at startup.
 func AllInit() {
 	InitSq120ToSq64()
 	InitBitMasks()
 	InitHashKeys()
+	InitFileRankBrd()
+}
+
+// InitFileRankBrd precomputes the FilesBrd and RanksBrd lookup tables.
+// For every 120-square index that corresponds to a real board square, the
+// table stores its file and rank; all other entries are set to FileNone/RankNone.
+func InitFileRankBrd() {
+	for index := range 120 {
+		FilesBrd[index] = FileNone
+		RanksBrd[index] = RankNone
+	}
+
+	for rank := Rank1; rank <= Rank8; rank++ {
+		for file := FileA; file <= FileH; file++ {
+			sq := FR2SQ(file, rank)
+			FilesBrd[sq] = file
+			RanksBrd[sq] = rank
+		}
+	}
 }
 
 // Rand64 generates a random 64-bit value for use as a Zobrist key component.
