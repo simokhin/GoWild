@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+// ---------------------------------------------------------------------------
+// Move generation direction tables
+// ---------------------------------------------------------------------------
 
 // LoopSlidePce is the iteration order for sliding pieces, arranged as white bishop,
 // rook, queen followed by black bishop, rook, queen. Empty entries act as sentinel
@@ -22,13 +24,15 @@ var LoopNonSlideIndex = [2]int{0, 3}
 // PceDir maps each piece type (indexed by Piece constant) to its possible move
 // direction offsets on the 120-square mailbox board. The offsets represent the
 // delta added to a square index to move one step in a given direction:
-//   -1 = west, +1 = east, -10 = north, +10 = south,
-//   -11 = north-west, -9 = north-east, +11 = south-east, +9 = south-west.
+//
+//	-1 = west, +1 = east, -10 = north, +10 = south,
+//	-11 = north-west, -9 = north-east, +11 = south-east, +9 = south-west.
+//
 // Knights use the 8 L-shaped offsets; bishops use 4 diagonals; rooks use 4
 // orthogonals; queens and kings use all 8; pawns and Empty use zero-filled rows.
 var PceDir = [13][8]int{
-	{0, 0, 0, 0, 0, 0, 0, 0}, // Empty
-	{0, 0, 0, 0, 0, 0, 0, 0}, // WP (handled separately)
+	{0, 0, 0, 0, 0, 0, 0, 0},           // Empty
+	{0, 0, 0, 0, 0, 0, 0, 0},           // WP (handled separately)
 	{-8, -19, -21, -12, 8, 19, 21, 12}, // WN
 	{-9, -11, 11, 9, 0, 0, 0, 0},       // WB
 	{-1, -10, 1, 10, 0, 0, 0, 0},       // WR
@@ -60,6 +64,10 @@ var NumDir = [13]int{
 	8, // BK
 }
 
+// ---------------------------------------------------------------------------
+// Move list helpers
+// ---------------------------------------------------------------------------
+
 // AddQuietMove appends a non-capture move to the move list. The score is set to
 // 0 by default (move ordering is handled later by the search).
 func AddQuietMove(pos *Board, move int, list *MoveList) {
@@ -83,6 +91,10 @@ func AddEnPassantMove(pos *Board, move int, list *MoveList) {
 	list.Moves[list.Count].Score = 0
 	list.Count++
 }
+
+// ---------------------------------------------------------------------------
+// Move generation
+// ---------------------------------------------------------------------------
 
 // GenerateAllMoves generates all pseudo-legal moves for the given position and stores
 // them in the move list. Generates pawn moves (single pushes, double pushes, captures,
@@ -128,6 +140,24 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 				AddCaptureMove(pos, EncodeMove(int(sq), int(sq+11), Empty, Empty, MFlagEP), list)
 			}
 		}
+
+		// Castle
+
+		if pos.CastlePerm&WKCA != 0 {
+			if pos.Pieces[F1] == Empty && pos.Pieces[G1] == Empty {
+				if !SqAttacked(E1, Black, pos) && !SqAttacked(F1, Black, pos) {
+					AddQuietMove(pos, EncodeMove(int(E1), int(G1), Empty, Empty, MFlagCA), list)
+				}
+			}
+		}
+
+		if pos.CastlePerm&WQCA != 0 {
+			if pos.Pieces[D1] == Empty && pos.Pieces[C1] == Empty && pos.Pieces[B1] == Empty {
+				if !SqAttacked(E1, Black, pos) && !SqAttacked(D1, Black, pos) {
+					AddQuietMove(pos, EncodeMove(int(E1), int(C1), Empty, Empty, MFlagCA), list)
+				}
+			}
+		}
 	} else {
 		for pceNum = 0; pceNum < pos.PceNum[BP]; pceNum++ {
 			sq = pos.PList[BP][pceNum]
@@ -155,6 +185,23 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 				AddCaptureMove(pos, EncodeMove(int(sq), int(sq-11), Empty, Empty, MFlagEP), list)
 			}
 		}
+
+		// Castle
+		if pos.CastlePerm&BKCA != 0 {
+			if pos.Pieces[F8] == Empty && pos.Pieces[G8] == Empty {
+				if !SqAttacked(E8, White, pos) && !SqAttacked(F8, White, pos) {
+					AddQuietMove(pos, EncodeMove(int(E8), int(G8), Empty, Empty, MFlagCA), list)
+				}
+			}
+		}
+
+		if pos.CastlePerm&BQCA != 0 {
+			if pos.Pieces[D8] == Empty && pos.Pieces[C8] == Empty && pos.Pieces[B8] == Empty {
+				if !SqAttacked(E8, White, pos) && !SqAttacked(D8, White, pos) {
+					AddQuietMove(pos, EncodeMove(int(E8), int(C8), Empty, Empty, MFlagCA), list)
+				}
+			}
+		}
 	}
 
 	// Generate sliding piece moves (bishops, rooks, queens) by ray-casting along each
@@ -166,12 +213,10 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 	pceIndex++
 	for piece != Empty {
 		Assert(PieceValid(piece), "invalid piece")
-		fmt.Printf("sliders pceIndex:%d pce:%d\n", pceIndex, piece)
 
 		for pceNum = 0; pceNum < pos.PceNum[piece]; pceNum++ {
 			sq = pos.PList[piece][pceNum]
 			Assert(SqOnBoard(sq), "square not on board")
-			fmt.Printf("Piece:%c on %s\n", PceChar[piece], PrSq(sq))
 
 			for index = 0; index < NumDir[piece]; index++ {
 				dir = PceDir[piece][index]
@@ -180,12 +225,10 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 				for !SqOffBoard(tSq) {
 					if pos.Pieces[tSq] != Empty {
 						if PieceCol[pos.Pieces[tSq]] == side^1 {
-							fmt.Printf("\t\tCapture on %s\n", PrSq(tSq))
 							AddCaptureMove(pos, EncodeMove(int(sq), int(tSq), pos.Pieces[tSq], Empty, 0), list)
 						}
 						break
 					}
-					fmt.Printf("\t\tNormal on %s\n", PrSq(tSq))
 					AddQuietMove(pos, EncodeMove(int(sq), int(tSq), Empty, Empty, 0), list)
 					tSq += Square(dir)
 				}
@@ -205,12 +248,10 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 	pceIndex++
 	for piece != Empty {
 		Assert(PieceValid(piece), "invalid piece")
-		fmt.Printf("non sliders pceIndex:%d pce:%d\n", pceIndex, piece)
 
 		for pceNum = 0; pceNum < pos.PceNum[piece]; pceNum++ {
 			sq = pos.PList[piece][pceNum]
 			Assert(SqOnBoard(sq), "square not on board")
-			fmt.Printf("Piece:%c on %s\n", PceChar[piece], PrSq(sq))
 
 			for index = 0; index < NumDir[piece]; index++ {
 				dir = PceDir[piece][index]
@@ -223,12 +264,10 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 				// BLACK ^ 1 == WHITE WHITE ^ 1 == BLACK
 				if pos.Pieces[tSq] != Empty {
 					if PieceCol[pos.Pieces[tSq]] == side^1 {
-						fmt.Printf("\t\tCapture on %s\n", PrSq(tSq))
 						AddCaptureMove(pos, EncodeMove(int(sq), int(tSq), pos.Pieces[tSq], Empty, 0), list)
 					}
 					continue
 				}
-				fmt.Printf("\t\tNormal on %s\n", PrSq(tSq))
 				AddQuietMove(pos, EncodeMove(int(sq), int(tSq), Empty, Empty, 0), list)
 			}
 		}
@@ -237,6 +276,10 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 		pceIndex++
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Pawn move helpers
+// ---------------------------------------------------------------------------
 
 // AddWhitePawnCapMove generates all capture moves for a white pawn moving from
 // `from` to `to`, capturing the piece `cap`. If the pawn is on the promotion rank
@@ -317,6 +360,10 @@ func AddBlackPawnMove(pos *Board, from, to int, list *MoveList) {
 	}
 
 }
+
+// ---------------------------------------------------------------------------
+// Encoding / board helpers
+// ---------------------------------------------------------------------------
 
 // EncodeMove packs a move's from-square, to-square, captured piece, promoted piece,
 // and a flag into a single 28-bit integer using bit shifts:
