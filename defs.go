@@ -292,8 +292,8 @@ func IsKi(p Piece) bool {
 }
 
 /*
-	0000 0000 0000 0000 0111 1111 -> From 0x3F
-	0000 0000 0011 1111 1000 0000 -> To >> 7, 0x3F
+	0000 0000 0000 0000 0111 1111 -> From 0x7F
+	0000 0000 0011 1111 1000 0000 -> To >> 7, 0x7F
 	0000 0000 0011 1100 0000 0000 -> Captured >> 14, 0xF
 	0000 0000 0100 0000 0000 0000 -> EP 0x40000
 	0000 0000 1000 0000 0000 0000 -> Pawn Start 0x80000
@@ -302,15 +302,15 @@ func IsKi(p Piece) bool {
 */
 
 // FromSq extracts the origin square (0–63) from an encoded move integer.
-// Bits 0–6 hold the from-square index, masked with 0x3F.
+// Bits 0–6 hold the from-square index, masked with 0x7F.
 func FromSq(m int) int {
-	return m & 0x3F
+	return m & 0x7F
 }
 
 // ToSq extracts the destination square (0–63) from an encoded move integer.
-// Bits 7–13 (shifted right by 7) hold the to-square index, masked with 0x3F.
+// Bits 7–13 (shifted right by 7) hold the to-square index, masked with 0x7F.
 func ToSq(m int) int {
-	return (m >> 7) & 0x3F
+	return (m >> 7) & 0x7F
 }
 
 // Captured extracts the captured piece type from an encoded move integer.

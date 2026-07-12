@@ -29,19 +29,26 @@ func main() {
 	// Encode a test move by packing from-square, to-square, captured piece,
 	// and promoted piece into a single 28-bit integer using bit shifts.
 	// This validates the move encoding/decoding scheme used throughout the engine.
-	move := 0
-	from := 6
-	to := 12
+	from := A2
+	to := H7
 	cap := WR
-	prom := BR
+	prom := BQ
 
-	move = from | (to << 7) | (int(cap) << 14) | (int(prom) << 20)
+	// Pack the four move components into a single integer using bit shifts:
+	// from-square in bits 0–6, to-square in bits 7–13, captured in bits 14–17,
+	// and promoted piece in bits 20–23.
+	move := int(from) | (int(to) << 7) | (int(cap) << 14) | (int(prom) << 20)
 
 	fmt.Printf("\ndec:%d hex:%X\n", move, move)
 	PrintBin(move)
 
+	// Decode and print each field of the encoded move to verify correctness.
 	fmt.Printf("from:%d to:%d cap:%d prom:%d\n", FromSq(move), ToSq(move), Captured(move), Promoted(move))
 
+	// Print the move in human-readable algebraic notation (e.g., "a2h7").
+	fmt.Printf("Algebraic from:%s", PrSq(from))
+	fmt.Printf("Algebraic to:%s", PrSq(to))
+	fmt.Printf("Algebraic move:%s", PrMove(move))
 }
 
 // PrintBin prints the binary representation of a move integer, grouped
