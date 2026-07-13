@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"unsafe"
 )
 
 // PvSize is the size in bytes of the PV table.
-const PvSize = 0x100000 * 2
+const PvSize = 0x100000 * 128
 
 // InitPvTable (re)allocates table's slots to fill PvSize and clears them.
 func InitPvTable(table *PVTable) {
@@ -16,7 +15,7 @@ func InitPvTable(table *PVTable) {
 	table.PTable = make([]PVEntry, numEntries)
 	ClearPvTable(table)
 
-	fmt.Printf("PvTable init complete with %d entries\n", table.NumEntries())
+	//fmt.Printf("PvTable init complete with %d entries\n", table.NumEntries())
 }
 
 // ClearPvTable resets every slot in table to its empty state.

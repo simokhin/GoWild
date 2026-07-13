@@ -80,18 +80,30 @@ func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
 		return EvalPosition(pos)
 	}
 
-	score := EvalPosition(pos)
+	inCheck := SqAttacked(pos.KingSq[pos.Side], pos.Side^1, pos)
 
-	if score >= beta {
-		return beta
-	}
+	score := -Infinite
 
-	if score > alpha {
-		alpha = score
+	if !inCheck {
+		score = EvalPosition(pos)
+
+		if score >= beta {
+			return beta
+		}
+
+		if score > alpha {
+			alpha = score
+		}
 	}
 
 	list := &MoveList{}
-	GenerateAllCaptures(pos, list)
+	if inCheck {
+		// In check: stand-pat is not a legal option and captures alone may miss
+		// forced evasions (blocks, king moves), so search every legal reply.
+		GenerateAllMoves(pos, list)
+	} else {
+		GenerateAllCaptures(pos, list)
+	}
 
 	legal := 0
 	oldAlpha := alpha
@@ -124,6 +136,10 @@ func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
 			alpha = score
 			bestMove = list.Moves[moveNum].MoveInt
 		}
+	}
+
+	if inCheck && legal == 0 {
+		return -Mate + pos.Ply
 	}
 
 	if alpha != oldAlpha {
@@ -167,7 +183,7 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	Assert(CheckBoard(pos), "board check failed")
 
 	if depth == 0 {
-		info.Nodes++
+		//info.Nodes++
 		return Quiescene(alpha, beta, pos, info)
 	}
 
@@ -175,12 +191,17 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 		CheckUp(info)
 	}
 
-	if IsRepetition(pos) || pos.FiftyMove >= 100 {
+	if IsRepetition(pos) || pos.FiftyMove >= 100 && pos.Ply != 0 {
 		return 0
 	}
 
 	if pos.Ply > MaxDepth-1 {
 		return EvalPosition(pos)
+	}
+
+	inCheck := SqAttacked(pos.KingSq[pos.Side], pos.Side^1, pos)
+	if inCheck {
+		depth++
 	}
 
 	info.Nodes++
@@ -243,7 +264,7 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	}
 
 	if legal == 0 {
-		if SqAttacked(pos.KingSq[pos.Side], pos.Side^1, pos) {
+		if inCheck {
 			return -Mate + pos.Ply
 		}
 		return 0
