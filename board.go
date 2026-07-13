@@ -358,3 +358,50 @@ func UpdateListsMaterial(pos *Board) {
 		}
 	}
 }
+
+func MirrorBoard(pos *Board) {
+	var tempPiecesArray [64]Piece
+	tempSide := pos.Side ^ 1
+
+	swapPieces := [13]Piece{Empty, BP, BN, BB, BR, BQ, BK, WP, WN, WB, WR, WQ, WK}
+
+	var tempCastlePerm CastlePerm
+	tempEnPas := NoSquare
+
+	if pos.CastlePerm&WKCA != 0 {
+		tempCastlePerm |= BKCA
+	}
+	if pos.CastlePerm&WQCA != 0 {
+		tempCastlePerm |= BQCA
+	}
+	if pos.CastlePerm&BKCA != 0 {
+		tempCastlePerm |= WKCA
+	}
+	if pos.CastlePerm&BQCA != 0 {
+		tempCastlePerm |= WQCA
+	}
+
+	if pos.EnPas != NoSquare {
+		tempEnPas = SQ120(Mirror64[SQ64(pos.EnPas)])
+	}
+
+	for sq := 0; sq < 64; sq++ {
+		tempPiecesArray[sq] = pos.Pieces[SQ120(Mirror64[sq])]
+	}
+
+	ResetBoard(pos)
+
+	for sq := 0; sq < 64; sq++ {
+		tp := swapPieces[tempPiecesArray[sq]]
+		pos.Pieces[SQ120(sq)] = tp
+	}
+
+	pos.Side = tempSide
+	pos.CastlePerm = tempCastlePerm
+	pos.EnPas = tempEnPas
+	pos.PosKey = GeneratePosKey(pos)
+
+	UpdateListsMaterial(pos)
+
+	Assert(CheckBoard(pos), "board check failed")
+}
