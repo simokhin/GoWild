@@ -32,6 +32,10 @@ var RanksBrd [120]Rank
 var FileBBMask [8]Bitboard
 var RankBBMask [8]Bitboard
 
+var BlackPassedMask [64]Bitboard
+var WhitePassedMask [64]Bitboard
+var IsolatedMask [64]Bitboard
+
 // AllInit initialises all lookup tables required by the engine: square mapping,
 // bit masks, and Zobrist hash keys. Must be called once at startup.
 func AllInit() {
@@ -57,12 +61,56 @@ func InitEvalMasks() {
 		}
 	}
 
-	for r := Rank8; r >= Rank1; r-- {
-		PrintBitBoard(RankBBMask[r])
+	for sq := 0; sq < 64; sq++ {
+		IsolatedMask[sq] = 0
+		WhitePassedMask[sq] = 0
+		BlackPassedMask[sq] = 0
 	}
 
-	for f := FileA; f <= FileH; f++ {
-		PrintBitBoard(FileBBMask[f])
+	for sq := 0; sq < 64; sq++ {
+		tsq := sq + 8
+		for tsq < 64 {
+			WhitePassedMask[sq] |= 1 << Bitboard(tsq)
+			tsq += 8
+		}
+
+		tsq = sq - 8
+		for tsq >= 0 {
+			BlackPassedMask[sq] |= 1 << Bitboard(tsq)
+			tsq -= 8
+		}
+
+		if FilesBrd[SQ120(sq)] > FileA {
+			IsolatedMask[sq] |= FileBBMask[FilesBrd[SQ120(sq)]-1]
+
+			tsq = sq + 7
+			for tsq < 64 {
+				WhitePassedMask[sq] |= 1 << Bitboard(tsq)
+				tsq += 8
+			}
+
+			tsq = sq - 9
+			for tsq >= 0 {
+				BlackPassedMask[sq] |= 1 << Bitboard(tsq)
+				tsq -= 8
+			}
+		}
+
+		if FilesBrd[SQ120(sq)] < FileH {
+			IsolatedMask[sq] |= FileBBMask[FilesBrd[SQ120(sq)]+1]
+
+			tsq = sq + 9
+			for tsq < 64 {
+				WhitePassedMask[sq] |= 1 << Bitboard(tsq)
+				tsq += 8
+			}
+
+			tsq = sq - 7
+			for tsq >= 0 {
+				BlackPassedMask[sq] |= 1 << Bitboard(tsq)
+				tsq -= 8
+			}
+		}
 	}
 }
 
