@@ -2,15 +2,46 @@
 // representation with bitboard support, Zobrist hashing, and move generation.
 package main
 
-const TRICKY = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
 
 // main is the program entry point. It initialises the board representation
-// lookup tables. Further game logic will be added here.
+// lookup tables, sets up the starting position, and enters an interactive
+// move-input loop where the user can enter moves in algebraic notation
+// (e.g., "e2e4") or type "quit" to exit.
 func main() {
 	AllInit()
 
 	board := &Board{}
-	ParseFEN(TRICKY, board)
+	ParseFEN(START_FEN, board)
+	PrintBoard(board)
 
-	PerftTest(3, board)
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("\nEnter move (or 'quit'): ")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+
+		if input == "quit" {
+			break
+		}
+
+		move := ParseMove(input, board)
+		if move == NoMove {
+			fmt.Println("Invalid move, try again")
+			continue
+		}
+
+		if !MakeMove(board, move) {
+			fmt.Println("Illegal move (king would be in check), try again")
+			continue
+		}
+
+		PrintBoard(board)
+		fmt.Println("Poskey:", board.PosKey)
+	}
 }
