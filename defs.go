@@ -249,6 +249,24 @@ type Board struct {
 
 	PvTable *PVTable      // Hash table of best moves found per position, used to recover the PV line
 	PvArray [MaxDepth]int // Principal variation moves, filled in by GetPvLine
+
+	SearchHistory [13][120]int
+	SearchKillers [2][MaxDepth]int
+}
+
+type SearchInfo struct {
+	StartTime int64
+	StopTime  int64
+	Depth     int
+	DepthSet  int
+	TimeSet   bool
+	MovesToGo int
+	Infinite  bool
+
+	Nodes int64
+
+	Quit    bool
+	Stopped bool
 }
 
 // MoveList holds a list of legal moves for a position, used during search.
