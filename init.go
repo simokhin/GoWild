@@ -29,6 +29,9 @@ var FilesBrd [120]File
 // RanksBrd maps each 120-square index to its rank (Rank1–Rank8), or RankNone for off-board squares.
 var RanksBrd [120]Rank
 
+var FileBBMask [8]Bitboard
+var RankBBMask [8]Bitboard
+
 // AllInit initialises all lookup tables required by the engine: square mapping,
 // bit masks, and Zobrist hash keys. Must be called once at startup.
 func AllInit() {
@@ -36,7 +39,31 @@ func AllInit() {
 	InitBitMasks()
 	InitHashKeys()
 	InitFileRankBrd()
+	InitEvalMasks()
 	InitMvvLva()
+}
+
+func InitEvalMasks() {
+	for sq := 0; sq < 8; sq++ {
+		FileBBMask[sq] = 0
+		RankBBMask[sq] = 0
+	}
+
+	for r := Rank8; r >= Rank1; r-- {
+		for f := FileA; f <= FileH; f++ {
+			sq := int(r)*8 + int(f)
+			FileBBMask[f] |= 1 << Bitboard(sq)
+			RankBBMask[r] |= 1 << Bitboard(sq)
+		}
+	}
+
+	for r := Rank8; r >= Rank1; r-- {
+		PrintBitBoard(RankBBMask[r])
+	}
+
+	for f := FileA; f <= FileH; f++ {
+		PrintBitBoard(FileBBMask[f])
+	}
 }
 
 // InitFileRankBrd precomputes the FilesBrd and RanksBrd lookup tables.
