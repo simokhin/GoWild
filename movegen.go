@@ -505,12 +505,12 @@ func AddWhitePawnMove(pos *Board, from, to int, list *MoveList) {
 	Assert(SqOnBoard(Square(to)), "to square not on board")
 
 	if RanksBrd[from] == Rank7 {
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, WQ, 0), list)
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, WR, 0), list)
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, WB, 0), list)
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, WN, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, WQ, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, WR, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, WB, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, WN, 0), list)
 	} else {
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, Empty, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, Empty, 0), list)
 	}
 
 }
@@ -525,12 +525,12 @@ func AddBlackPawnMove(pos *Board, from, to int, list *MoveList) {
 	Assert(SqOnBoard(Square(to)), "to square not on board")
 
 	if RanksBrd[from] == Rank2 {
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, BQ, 0), list)
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, BR, 0), list)
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, BB, 0), list)
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, BN, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, BQ, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, BR, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, BB, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, BN, 0), list)
 	} else {
-		AddCaptureMove(pos, EncodeMove(from, to, Empty, Empty, 0), list)
+		AddQuietMove(pos, EncodeMove(from, to, Empty, Empty, 0), list)
 	}
 
 }

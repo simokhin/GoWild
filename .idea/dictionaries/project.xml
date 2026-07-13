@@ -3,6 +3,12 @@
     <words>
       <w>Perft</w>
       <w>Quiescene</w>
+      <w>bestmove</w>
+      <w>isready</w>
+      <w>readyok</w>
+      <w>startpos</w>
+      <w>ucinewgame</w>
+      <w>uciok</w>
     </words>
   </dictionary>
 </component>

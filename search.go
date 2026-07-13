@@ -5,6 +5,12 @@ import "fmt"
 const Infinite = 30000
 const Mate = 29000
 
+func CheckUp(info *SearchInfo) {
+	if info.TimeSet && GetTimeMs() > info.StopTime {
+		info.Stopped.Store(true)
+	}
+}
+
 func PickNextMove(moveNum int, list *MoveList) {
 	bestScore := 0
 	bestNum := moveNum
@@ -50,8 +56,7 @@ func ClearForSearch(pos *Board, info *SearchInfo) {
 
 	pos.Ply = 0
 
-	info.StartTime = GetTimeMs()
-	info.Stopped = false
+	info.Stopped.Store(false)
 	info.Nodes = 0
 
 	info.Fh = 0
@@ -60,6 +65,10 @@ func ClearForSearch(pos *Board, info *SearchInfo) {
 
 func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
 	Assert(CheckBoard(pos), "board check failed")
+
+	if info.Nodes&2047 == 0 {
+		CheckUp(info)
+	}
 
 	info.Nodes++
 
@@ -100,6 +109,10 @@ func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
 		score = -Quiescene(-beta, -alpha, pos, info)
 		TakeMove(pos)
 
+		if info.Stopped.Load() {
+			return 0
+		}
+
 		if score > alpha {
 			if score >= beta {
 				if legal == 1 {
@@ -130,10 +143,14 @@ func SearchPosition(pos *Board, info *SearchInfo) {
 	for currentDepth := 1; currentDepth <= info.Depth; currentDepth++ {
 		bestScore = AlphaBeta(-Infinite, Infinite, currentDepth, pos, info, true)
 
+		if info.Stopped.Load() {
+			break
+		}
+
 		pvMoves = GetPvLine(currentDepth, pos)
 		bestMove = pos.PvArray[0]
 
-		fmt.Printf("Depth:%d score:%d move:%s nodes:%d ", currentDepth, bestScore, PrMove(bestMove), info.Nodes)
+		fmt.Printf("info score cp %d depth %d nodes %d time %d ", bestScore, currentDepth, info.Nodes, GetTimeMs()-info.StartTime)
 
 		pvMoves = GetPvLine(currentDepth, pos)
 		fmt.Print("pv")
@@ -141,8 +158,9 @@ func SearchPosition(pos *Board, info *SearchInfo) {
 			fmt.Printf(" %s", PrMove(pos.PvArray[pvNum]))
 		}
 		fmt.Println()
-		fmt.Printf("Ordering:%.2f\n", info.Fhf/info.Fh)
 	}
+
+	fmt.Printf("bestmove %s\n", PrMove(bestMove))
 }
 
 func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool) int {
@@ -151,6 +169,10 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	if depth == 0 {
 		info.Nodes++
 		return Quiescene(alpha, beta, pos, info)
+	}
+
+	if info.Nodes&2047 == 0 {
+		CheckUp(info)
 	}
 
 	if IsRepetition(pos) || pos.FiftyMove >= 100 {
@@ -191,6 +213,10 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 		legal++
 		score = -AlphaBeta(-beta, -alpha, depth-1, pos, info, true)
 		TakeMove(pos)
+
+		if info.Stopped.Load() {
+			return 0
+		}
 
 		if score > alpha {
 			if score >= beta {

@@ -1,8 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync/atomic"
+)
 
 // ---- Constants ----
+
+const Name = "GoFish"
 
 // START_FEN is the Forsyth–Edwards Notation string for the standard initial chess position.
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -14,7 +19,7 @@ const MaxGameMoves = 2048
 const MaxPositionMoves = 256
 
 // Debug controls whether assertions are compiled in. Set to false for release builds.
-const Debug = true
+const Debug = false
 
 // Move encoding bit flags and masks.
 const (
@@ -266,7 +271,7 @@ type SearchInfo struct {
 	Nodes int64
 
 	Quit    bool
-	Stopped bool
+	Stopped atomic.Bool
 
 	Fh  float64
 	Fhf float64
