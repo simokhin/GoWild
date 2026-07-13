@@ -20,14 +20,14 @@ func IsRepetition(pos *Board) bool {
 }
 
 func ClearForSearch(pos *Board, info *SearchInfo) {
-	for index := 0; index < 13; index++ {
-		for index2 := 0; index2 < 120; index2++ {
+	for index := range 13 {
+		for index2 := range 120 {
 			pos.SearchHistory[index][index2] = 0
 		}
 	}
 
-	for index := 0; index < 13; index++ {
-		for index2 := 0; index2 < 120; index2++ {
+	for index := range 2 {
+		for index2 := range MaxDepth {
 			pos.SearchKillers[index][index2] = 0
 		}
 	}
@@ -39,6 +39,9 @@ func ClearForSearch(pos *Board, info *SearchInfo) {
 	info.StartTime = GetTimeMs()
 	info.Stopped = false
 	info.Nodes = 0
+
+	info.Fh = 0
+	info.Fhf = 0
 }
 
 func SearchPosition(pos *Board, info *SearchInfo) {
@@ -62,6 +65,7 @@ func SearchPosition(pos *Board, info *SearchInfo) {
 			fmt.Printf(" %s", PrMove(pos.PvArray[pvNum]))
 		}
 		fmt.Println()
+		fmt.Printf("Ordering:%.2f\n", info.Fhf/info.Fh)
 	}
 }
 
@@ -91,7 +95,7 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	bestMove := NoMove
 	score := -Infinite
 
-	for moveNum := 0; moveNum <= list.Count; moveNum++ {
+	for moveNum := 0; moveNum < list.Count; moveNum++ {
 		if !MakeMove(pos, list.Moves[moveNum].MoveInt) {
 			continue
 		}
@@ -102,6 +106,10 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 
 		if score > alpha {
 			if score >= beta {
+				if legal == 1 {
+					info.Fhf++
+				}
+				info.Fh++
 				return beta
 			}
 			alpha = score

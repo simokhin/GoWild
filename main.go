@@ -2,7 +2,14 @@
 // representation with bitboard support, Zobrist hashing, and move generation.
 package main
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
+
+const PUZZLE_FEN = "1B4k1/P4rpp/q4p2/8/1p6/1Q2P3/3PKPPP/2r3R1 w - - 2 27"
 
 // main is the program entry point. It initialises the board representation
 // lookup tables, sets up the starting position, and exercises the PV table:
@@ -17,32 +24,39 @@ func main() {
 	board.PvTable = &PVTable{}
 	InitPvTable(board.PvTable)
 
-	ParseFEN(START_FEN, board)
+	info := &SearchInfo{}
 
-	move1 := ParseMove("e2e4", board)
-	StorePvMove(board, move1)
-	MakeMove(board, move1)
+	ParseFEN(PUZZLE_FEN, board)
 
-	move2 := ParseMove("e7e5", board)
-	StorePvMove(board, move2)
-	MakeMove(board, move2)
+	reader := bufio.NewReader(os.Stdin)
 
-	move3 := ParseMove("g1f3", board)
-	StorePvMove(board, move3)
-	MakeMove(board, move3)
+	for {
+		PrintBoard(board)
+		fmt.Print("Please enter a move > ")
 
-	TakeMove(board)
-	TakeMove(board)
-	TakeMove(board)
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
 
-	PrintBoard(board)
+		if len(input) == 0 {
+			continue
+		}
 
-	count := GetPvLine(5, board)
+		if input[0] == 'q' {
+			break
+		} else if input[0] == 't' {
+			TakeMove(board)
+		} else if input[0] == 's' {
+			info.Depth = 4
+			SearchPosition(board, info)
+		} else {
+			move := ParseMove(input, board)
+			if move != NoMove {
+				StorePvMove(board, move)
+				MakeMove(board, move)
 
-	fmt.Printf("\nPV line found, %d moves:\n", count)
-	for i := range count {
-		fmt.Printf("move %d: %s\n", i+1, PrMove(board.PvArray[i]))
+			} else {
+				fmt.Printf("Move Not Parsed: %s\n", input)
+			}
+		}
 	}
-
-	PrintBoard(board)
 }

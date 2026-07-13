@@ -267,6 +267,9 @@ type SearchInfo struct {
 
 	Quit    bool
 	Stopped bool
+
+	Fh  float64
+	Fhf float64
 }
 
 // MoveList holds a list of legal moves for a position, used during search.
