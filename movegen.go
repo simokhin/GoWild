@@ -163,11 +163,13 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 				AddWhitePawnCapMove(pos, int(sq), int(sq+11), pos.Pieces[sq+11], list)
 			}
 
-			if sq+9 == pos.EnPas {
-				AddCaptureMove(pos, EncodeMove(int(sq), int(sq+9), Empty, Empty, MFlagEP), list)
-			}
-			if sq+11 == pos.EnPas {
-				AddCaptureMove(pos, EncodeMove(int(sq), int(sq+11), Empty, Empty, MFlagEP), list)
+			if pos.EnPas != NoSquare {
+				if sq+9 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq+9), Empty, Empty, MFlagEP), list)
+				}
+				if sq+11 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq+11), Empty, Empty, MFlagEP), list)
+				}
 			}
 		}
 
@@ -208,11 +210,13 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 				AddBlackPawnCapMove(pos, int(sq), int(sq-11), pos.Pieces[sq-11], list)
 			}
 
-			if sq-9 == pos.EnPas {
-				AddCaptureMove(pos, EncodeMove(int(sq), int(sq-9), Empty, Empty, MFlagEP), list)
-			}
-			if sq-11 == pos.EnPas {
-				AddCaptureMove(pos, EncodeMove(int(sq), int(sq-11), Empty, Empty, MFlagEP), list)
+			if pos.EnPas != NoSquare {
+				if sq-9 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq-9), Empty, Empty, MFlagEP), list)
+				}
+				if sq-11 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq-11), Empty, Empty, MFlagEP), list)
+				}
 			}
 		}
 
