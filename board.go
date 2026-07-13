@@ -143,6 +143,14 @@ func ResetBoard(pos *Board) {
 	pos.PosKey = 0
 
 	pos.History = pos.History[:0]
+
+	// Lazily allocate the PV table on first reset so callers don't have to set
+	// it up themselves, then clear it since any previous position's PV entries
+	// are no longer valid.
+	if pos.PvTable == nil {
+		pos.PvTable = &PVTable{}
+	}
+	InitPvTable(pos.PvTable)
 }
 
 // ParseFEN parses a Forsyth–Edwards Notation string into a Board struct.

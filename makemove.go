@@ -168,8 +168,6 @@ func MovePiece(from, to Square, pos *Board) {
 // Make / Unmake move
 // ---------------------------------------------------------------------------
 
-const MaxDepth = 64
-
 // MakeMove applies a move to the board and returns true if the resulting position
 // is legal (the moving side's king is not left in check). If illegal, the move is
 // taken back via TakeMove and false is returned.

@@ -2,46 +2,47 @@
 // representation with bitboard support, Zobrist hashing, and move generation.
 package main
 
-import (
-	"bufio"
-	"fmt"
-	"os"
-	"strings"
-)
+import "fmt"
 
 // main is the program entry point. It initialises the board representation
-// lookup tables, sets up the starting position, and enters an interactive
-// move-input loop where the user can enter moves in algebraic notation
-// (e.g., "e2e4") or type "quit" to exit.
+// lookup tables, sets up the starting position, and exercises the PV table:
+// it plays a short sequence of moves in algebraic notation (e.g., "e2e4"),
+// storing each as the PV move for the position it was played from, then
+// unwinds all of them back to the starting position and uses GetPvLine to
+// recover the line from the PV table alone.
 func main() {
 	AllInit()
 
 	board := &Board{}
+	board.PvTable = &PVTable{}
+	InitPvTable(board.PvTable)
+
 	ParseFEN(START_FEN, board)
+
+	move1 := ParseMove("e2e4", board)
+	StorePvMove(board, move1)
+	MakeMove(board, move1)
+
+	move2 := ParseMove("e7e5", board)
+	StorePvMove(board, move2)
+	MakeMove(board, move2)
+
+	move3 := ParseMove("g1f3", board)
+	StorePvMove(board, move3)
+	MakeMove(board, move3)
+
+	TakeMove(board)
+	TakeMove(board)
+	TakeMove(board)
+
 	PrintBoard(board)
 
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Print("\nEnter move (or 'quit'): ")
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
+	count := GetPvLine(5, board)
 
-		if input == "quit" {
-			break
-		}
-
-		move := ParseMove(input, board)
-		if move == NoMove {
-			fmt.Println("Invalid move, try again")
-			continue
-		}
-
-		if !MakeMove(board, move) {
-			fmt.Println("Illegal move (king would be in check), try again")
-			continue
-		}
-
-		PrintBoard(board)
-		fmt.Println("Poskey:", board.PosKey)
+	fmt.Printf("\nPV line found, %d moves:\n", count)
+	for i := range count {
+		fmt.Printf("move %d: %s\n", i+1, PrMove(board.PvArray[i]))
 	}
+
+	PrintBoard(board)
 }

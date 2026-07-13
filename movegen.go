@@ -92,6 +92,25 @@ func AddEnPassantMove(pos *Board, move int, list *MoveList) {
 	list.Count++
 }
 
+// MoveExist reports whether move is a legal move in the current position.
+// It generates all pseudo-legal moves and makes/unmakes each one to filter
+// out moves that leave the moving side's king in check.
+func MoveExist(pos *Board, move int) bool {
+	list := &MoveList{}
+	GenerateAllMoves(pos, list)
+
+	for moveNum := 0; moveNum < list.Count; moveNum++ {
+		if !MakeMove(pos, list.Moves[moveNum].MoveInt) {
+			continue
+		}
+		TakeMove(pos)
+		if list.Moves[moveNum].MoveInt == move {
+			return true
+		}
+	}
+	return false
+}
+
 // ---------------------------------------------------------------------------
 // Move generation
 // ---------------------------------------------------------------------------

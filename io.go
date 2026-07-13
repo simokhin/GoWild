@@ -30,8 +30,6 @@ func ParseMove(ptrChar string, pos *Board) int {
 	from := FR2SQ(File(ptrChar[0]-'a'), Rank(ptrChar[1]-'1'))
 	to := FR2SQ(File(ptrChar[2]-'a'), Rank(ptrChar[3]-'1'))
 
-	fmt.Printf("%d %d %s\n", from, to, ptrChar)
-
 	Assert(SqOnBoard(from) && SqOnBoard(to), "square not on board")
 
 	list := &MoveList{}

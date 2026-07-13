@@ -25,11 +25,32 @@ const (
 	MFlagProm = 0xF00000  // Mask for the promoted piece field (bits 20–23)
 )
 
+// MaxDepth is the maximum search ply, and thus the maximum length of a PV line.
+const MaxDepth = 64
+
 // ---- Types ----
 
 // Piece represents a chess piece type.
 // The values are used internally in the 120-square mailbox board.
 type Piece int8
+
+// PVEntry is a single slot in the principal variation table, mapping a
+// position's Zobrist key to the best move found from that position.
+type PVEntry struct {
+	PosKey uint64 // Zobrist hash key of the position this entry belongs to
+	Move   int    // Best move found for that position
+}
+
+// PVTable is a hash table of PVEntry slots keyed by position hash, used to
+// recover the principal variation after a search completes.
+type PVTable struct {
+	PTable []PVEntry
+}
+
+// NumEntries returns the number of slots in the PV table.
+func (t *PVTable) NumEntries() int {
+	return len(t.PTable)
+}
 
 const (
 	Empty Piece = iota // Empty square
@@ -225,6 +246,9 @@ type Board struct {
 	History []Undo // Move history stack for undoing moves (stores Undo snapshots)
 
 	PList [13][10]Square // Piece list: for each piece type (13), up to 10 squares where that piece sits
+
+	PvTable *PVTable      // Hash table of best moves found per position, used to recover the PV line
+	PvArray [MaxDepth]int // Principal variation moves, filled in by GetPvLine
 }
 
 // MoveList holds a list of legal moves for a position, used during search.
