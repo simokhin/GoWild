@@ -5,6 +5,20 @@ import "fmt"
 const Infinite = 30000
 const Mate = 29000
 
+func PickNextMove(moveNum int, list *MoveList) {
+	bestScore := 0
+	bestNum := moveNum
+
+	for index := moveNum; index < list.Count; index++ {
+		if list.Moves[index].Score > bestScore {
+			bestScore = list.Moves[index].Score
+			bestNum = index
+		}
+	}
+
+	list.Moves[moveNum], list.Moves[bestNum] = list.Moves[bestNum], list.Moves[moveNum]
+}
+
 // IsRepetition reports whether the current position has occurred before
 // since the last irreversible move (capture, pawn move, or loss of castling
 // rights), which resets the fifty-move counter. Only that window of history
@@ -96,6 +110,8 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	score := -Infinite
 
 	for moveNum := 0; moveNum < list.Count; moveNum++ {
+		PickNextMove(moveNum, list)
+
 		if !MakeMove(pos, list.Moves[moveNum].MoveInt) {
 			continue
 		}

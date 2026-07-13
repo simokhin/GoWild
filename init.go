@@ -36,6 +36,7 @@ func AllInit() {
 	InitBitMasks()
 	InitHashKeys()
 	InitFileRankBrd()
+	InitMvvLva()
 }
 
 // InitFileRankBrd precomputes the FilesBrd and RanksBrd lookup tables.

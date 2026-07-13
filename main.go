@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const PUZZLE_FEN = "1B4k1/P4rpp/q4p2/8/1p6/1Q2P3/3PKPPP/2r3R1 w - - 2 27"
+const TEST_FEN = "r1b1k2r/ppppnppp/2n2q2/2b5/3NP3/2P1B3/PP3PPP/RN1QKB1R w KQkq - 0 1"
 
 // main is the program entry point. It initialises the board representation
 // lookup tables, sets up the starting position, and exercises the PV table:
@@ -26,7 +26,7 @@ func main() {
 
 	info := &SearchInfo{}
 
-	ParseFEN(PUZZLE_FEN, board)
+	ParseFEN(TEST_FEN, board)
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -46,7 +46,7 @@ func main() {
 		} else if input[0] == 't' {
 			TakeMove(board)
 		} else if input[0] == 's' {
-			info.Depth = 4
+			info.Depth = 5
 			SearchPosition(board, info)
 		} else {
 			move := ParseMove(input, board)

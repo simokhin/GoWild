@@ -150,7 +150,6 @@ func ResetBoard(pos *Board) {
 	if pos.PvTable == nil {
 		pos.PvTable = &PVTable{}
 	}
-	InitPvTable(pos.PvTable)
 }
 
 // ParseFEN parses a Forsyth–Edwards Notation string into a Board struct.

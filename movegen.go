@@ -64,6 +64,17 @@ var NumDir = [13]int{
 	8, // BK
 }
 
+var VictimScore = [13]int{0, 100, 200, 300, 400, 500, 600, 100, 200, 300, 400, 500, 600}
+var MvvLvaScores [13][13]int
+
+func InitMvvLva() {
+	for attacker := WP; attacker <= BK; attacker++ {
+		for victim := WP; victim <= BK; victim++ {
+			MvvLvaScores[victim][attacker] = VictimScore[victim] + 6 - (VictimScore[attacker] / 100)
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Move list helpers
 // ---------------------------------------------------------------------------
@@ -80,7 +91,7 @@ func AddQuietMove(pos *Board, move int, list *MoveList) {
 // 0 by default; the search will later assign an MVV-LVA or SEE score for ordering.
 func AddCaptureMove(pos *Board, move int, list *MoveList) {
 	list.Moves[list.Count].MoveInt = move
-	list.Moves[list.Count].Score = 0
+	list.Moves[list.Count].Score = MvvLvaScores[Captured(move)][pos.Pieces[FromSq(move)]]
 	list.Count++
 }
 
@@ -88,7 +99,7 @@ func AddCaptureMove(pos *Board, move int, list *MoveList) {
 // These are treated as captures but stored with a separate helper for clarity.
 func AddEnPassantMove(pos *Board, move int, list *MoveList) {
 	list.Moves[list.Count].MoveInt = move
-	list.Moves[list.Count].Score = 0
+	list.Moves[list.Count].Score = 105
 	list.Count++
 }
 
