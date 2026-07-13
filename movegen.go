@@ -83,7 +83,16 @@ func InitMvvLva() {
 // 0 by default (move ordering is handled later by the search).
 func AddQuietMove(pos *Board, move int, list *MoveList) {
 	list.Moves[list.Count].MoveInt = move
-	list.Moves[list.Count].Score = 0
+
+	if pos.SearchKillers[0][pos.Ply] == move {
+		list.Moves[list.Count].Score = 900000
+	} else if pos.SearchKillers[1][pos.Ply] == move {
+		list.Moves[list.Count].Score = 800000
+	} else {
+		list.Moves[list.Count].Score = pos.SearchHistory[pos.Pieces[FromSq(move)]][ToSq(move)]
+
+	}
+
 	list.Count++
 }
 
@@ -91,7 +100,7 @@ func AddQuietMove(pos *Board, move int, list *MoveList) {
 // 0 by default; the search will later assign an MVV-LVA or SEE score for ordering.
 func AddCaptureMove(pos *Board, move int, list *MoveList) {
 	list.Moves[list.Count].MoveInt = move
-	list.Moves[list.Count].Score = MvvLvaScores[Captured(move)][pos.Pieces[FromSq(move)]]
+	list.Moves[list.Count].Score = MvvLvaScores[Captured(move)][pos.Pieces[FromSq(move)]] + 1000000
 	list.Count++
 }
 
@@ -99,7 +108,7 @@ func AddCaptureMove(pos *Board, move int, list *MoveList) {
 // These are treated as captures but stored with a separate helper for clarity.
 func AddEnPassantMove(pos *Board, move int, list *MoveList) {
 	list.Moves[list.Count].MoveInt = move
-	list.Moves[list.Count].Score = 105
+	list.Moves[list.Count].Score = 105 + 1000000
 	list.Count++
 }
 
@@ -303,6 +312,137 @@ func GenerateAllMoves(pos *Board, list *MoveList) {
 					continue
 				}
 				AddQuietMove(pos, EncodeMove(int(sq), int(tSq), Empty, Empty, 0), list)
+			}
+		}
+
+		piece = LoopNonSlidePce[pceIndex]
+		pceIndex++
+	}
+}
+
+func GenerateAllCaptures(pos *Board, list *MoveList) {
+	Assert(CheckBoard(pos), "board check failed")
+
+	list.Count = 0
+
+	side := pos.Side
+	var sq, tSq Square
+	var pceNum int
+
+	dir := 0
+	index := 0
+	pceIndex := 0
+
+	if side == White {
+		for pceNum = 0; pceNum < pos.PceNum[WP]; pceNum++ {
+			sq = pos.PList[WP][pceNum]
+			Assert(SqOnBoard(sq), "square not on board")
+
+			if !SqOffBoard(sq+9) && PieceCol[pos.Pieces[sq+9]] == Black {
+				AddWhitePawnCapMove(pos, int(sq), int(sq+9), pos.Pieces[sq+9], list)
+			}
+
+			if !SqOffBoard(sq+11) && PieceCol[pos.Pieces[sq+11]] == Black {
+				AddWhitePawnCapMove(pos, int(sq), int(sq+11), pos.Pieces[sq+11], list)
+			}
+
+			if pos.EnPas != NoSquare {
+				if sq+9 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq+9), Empty, Empty, MFlagEP), list)
+				}
+				if sq+11 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq+11), Empty, Empty, MFlagEP), list)
+				}
+			}
+		}
+
+	} else {
+		for pceNum = 0; pceNum < pos.PceNum[BP]; pceNum++ {
+			sq = pos.PList[BP][pceNum]
+			Assert(SqOnBoard(sq), "square not on board")
+
+			if !SqOffBoard(sq-9) && PieceCol[pos.Pieces[sq-9]] == White {
+				AddBlackPawnCapMove(pos, int(sq), int(sq-9), pos.Pieces[sq-9], list)
+			}
+
+			if !SqOffBoard(sq-11) && PieceCol[pos.Pieces[sq-11]] == White {
+				AddBlackPawnCapMove(pos, int(sq), int(sq-11), pos.Pieces[sq-11], list)
+			}
+
+			if pos.EnPas != NoSquare {
+				if sq-9 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq-9), Empty, Empty, MFlagEP), list)
+				}
+				if sq-11 == pos.EnPas {
+					AddEnPassantMove(pos, EncodeMove(int(sq), int(sq-11), Empty, Empty, MFlagEP), list)
+				}
+			}
+		}
+	}
+
+	// Generate sliding piece moves (bishops, rooks, queens) by ray-casting along each
+	// direction offset until hitting a board edge or another piece. Captures are added
+	// for enemy pieces; friendly pieces block further movement on that ray.
+
+	pceIndex = LoopSlideIndex[side]
+	piece := LoopSlidePce[pceIndex]
+	pceIndex++
+	for piece != Empty {
+		Assert(PieceValid(piece), "invalid piece")
+
+		for pceNum = 0; pceNum < pos.PceNum[piece]; pceNum++ {
+			sq = pos.PList[piece][pceNum]
+			Assert(SqOnBoard(sq), "square not on board")
+
+			for index = 0; index < NumDir[piece]; index++ {
+				dir = PceDir[piece][index]
+				tSq = sq + Square(dir)
+
+				for !SqOffBoard(tSq) {
+					if pos.Pieces[tSq] != Empty {
+						if PieceCol[pos.Pieces[tSq]] == side^1 {
+							AddCaptureMove(pos, EncodeMove(int(sq), int(tSq), pos.Pieces[tSq], Empty, 0), list)
+						}
+						break
+					}
+					tSq += Square(dir)
+				}
+			}
+		}
+
+		piece = LoopSlidePce[pceIndex]
+		pceIndex++
+	}
+
+	// Generate non-sliding piece moves (knights, kings) by testing each single-step
+	// direction offset. Only one step is taken per direction; captures are added for
+	// enemy pieces, blocked squares are skipped.
+
+	pceIndex = LoopNonSlideIndex[side]
+	piece = LoopNonSlidePce[pceIndex]
+	pceIndex++
+	for piece != Empty {
+		Assert(PieceValid(piece), "invalid piece")
+
+		for pceNum = 0; pceNum < pos.PceNum[piece]; pceNum++ {
+			sq = pos.PList[piece][pceNum]
+			Assert(SqOnBoard(sq), "square not on board")
+
+			for index = 0; index < NumDir[piece]; index++ {
+				dir = PceDir[piece][index]
+				tSq = sq + Square(dir)
+
+				if SqOffBoard(tSq) {
+					continue
+				}
+
+				// BLACK ^ 1 == WHITE WHITE ^ 1 == BLACK
+				if pos.Pieces[tSq] != Empty {
+					if PieceCol[pos.Pieces[tSq]] == side^1 {
+						AddCaptureMove(pos, EncodeMove(int(sq), int(tSq), pos.Pieces[tSq], Empty, 0), list)
+					}
+					continue
+				}
 			}
 		}
 

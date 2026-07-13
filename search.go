@@ -58,6 +58,68 @@ func ClearForSearch(pos *Board, info *SearchInfo) {
 	info.Fhf = 0
 }
 
+func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
+	Assert(CheckBoard(pos), "board check failed")
+
+	info.Nodes++
+
+	if IsRepetition(pos) || pos.FiftyMove >= 100 {
+		return 0
+	}
+
+	if pos.Ply > MaxDepth-1 {
+		return EvalPosition(pos)
+	}
+
+	score := EvalPosition(pos)
+
+	if score >= beta {
+		return beta
+	}
+
+	if score > alpha {
+		alpha = score
+	}
+
+	list := &MoveList{}
+	GenerateAllCaptures(pos, list)
+
+	legal := 0
+	oldAlpha := alpha
+	bestMove := NoMove
+	score = -Infinite
+
+	for moveNum := 0; moveNum < list.Count; moveNum++ {
+		PickNextMove(moveNum, list)
+
+		if !MakeMove(pos, list.Moves[moveNum].MoveInt) {
+			continue
+		}
+
+		legal++
+		score = -Quiescene(-beta, -alpha, pos, info)
+		TakeMove(pos)
+
+		if score > alpha {
+			if score >= beta {
+				if legal == 1 {
+					info.Fhf++
+				}
+				info.Fh++
+				return beta
+			}
+			alpha = score
+			bestMove = list.Moves[moveNum].MoveInt
+		}
+	}
+
+	if alpha != oldAlpha {
+		StorePvMove(pos, bestMove)
+	}
+
+	return alpha
+}
+
 func SearchPosition(pos *Board, info *SearchInfo) {
 	bestMove := NoMove
 	bestScore := -Infinite
@@ -88,7 +150,7 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 
 	if depth == 0 {
 		info.Nodes++
-		return EvalPosition(pos)
+		return Quiescene(alpha, beta, pos, info)
 	}
 
 	if IsRepetition(pos) || pos.FiftyMove >= 100 {
@@ -108,6 +170,16 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	oldAlpha := alpha
 	bestMove := NoMove
 	score := -Infinite
+	pvMove := ProbePvMove(pos)
+
+	if pvMove != NoMove {
+		for moveNum := 0; moveNum < list.Count; moveNum++ {
+			if list.Moves[moveNum].MoveInt == pvMove {
+				list.Moves[moveNum].Score = 2000000
+				break
+			}
+		}
+	}
 
 	for moveNum := 0; moveNum < list.Count; moveNum++ {
 		PickNextMove(moveNum, list)
@@ -126,10 +198,21 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 					info.Fhf++
 				}
 				info.Fh++
+
+				if list.Moves[moveNum].MoveInt&MFlagCap == 0 {
+					pos.SearchKillers[1][pos.Ply] = pos.SearchKillers[0][pos.Ply]
+					pos.SearchKillers[0][pos.Ply] = list.Moves[moveNum].MoveInt
+				}
+
 				return beta
 			}
 			alpha = score
 			bestMove = list.Moves[moveNum].MoveInt
+
+			if list.Moves[moveNum].MoveInt&MFlagCap == 0 {
+				pos.SearchHistory[pos.Pieces[FromSq(bestMove)]][ToSq(bestMove)] += depth
+			}
+
 		}
 	}
 

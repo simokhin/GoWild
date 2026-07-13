@@ -46,7 +46,7 @@ func main() {
 		} else if input[0] == 't' {
 			TakeMove(board)
 		} else if input[0] == 's' {
-			info.Depth = 5
+			info.Depth = 6
 			SearchPosition(board, info)
 		} else {
 			move := ParseMove(input, board)
