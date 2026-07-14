@@ -1,1 +1,13 @@
-gofish 
+# Binaries built into the repo root
+/gowild
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE / editor
+.idea/
+.vscode/

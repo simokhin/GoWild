@@ -7,7 +7,7 @@ import (
 
 // ---- Constants ----
 
-const Name = "GooFish"
+const Name = "GoWild"
 
 // START_FEN is the Forsyth–Edwards Notation string for the standard initial chess position.
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
