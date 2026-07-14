@@ -86,8 +86,52 @@ const RookSemiOpenFile = 5
 const QueenOpenFile = 5
 const QueenSemiOpenFile = 3
 
+var EndgameMat = 1*PieceVal[WR] + 2*PieceVal[WN] + 2*PieceVal[WP] + PieceVal[WK]
+
+func MaterialDraw(pos *Board) bool {
+	Assert(CheckBoard(pos), "board check failed")
+
+	if pos.PceNum[WR] == 0 && pos.PceNum[BR] == 0 && pos.PceNum[WQ] == 0 && pos.PceNum[BQ] == 0 {
+		if pos.PceNum[WB] == 0 && pos.PceNum[BB] == 0 {
+			if pos.PceNum[WN] < 3 && pos.PceNum[BN] < 3 {
+				return true
+			}
+		} else if pos.PceNum[WN] == 0 && pos.PceNum[BN] == 0 {
+			if abs(pos.PceNum[WB]-pos.PceNum[BB]) < 2 {
+				return true
+			}
+		} else if (pos.PceNum[WN] < 3 && pos.PceNum[WB] == 0) || (pos.PceNum[WB] == 1 && pos.PceNum[WN] == 0) {
+			if (pos.PceNum[BN] < 3 && pos.PceNum[BB] == 0) || (pos.PceNum[BB] == 1 && pos.PceNum[BN] == 0) {
+				return true
+			}
+		}
+	} else if pos.PceNum[WQ] == 0 && pos.PceNum[BQ] == 0 {
+		if pos.PceNum[WR] == 1 && pos.PceNum[BR] == 1 {
+			if (pos.PceNum[WN]+pos.PceNum[WB]) < 2 && (pos.PceNum[BN]+pos.PceNum[BB]) < 2 {
+				return true
+			}
+		} else if pos.PceNum[WR] == 1 && pos.PceNum[BR] == 0 {
+			if pos.PceNum[WN]+pos.PceNum[WB] == 0 &&
+				(pos.PceNum[BN]+pos.PceNum[BB] == 1 || pos.PceNum[BN]+pos.PceNum[BB] == 2) {
+				return true
+			}
+		} else if pos.PceNum[BR] == 1 && pos.PceNum[WR] == 0 {
+			if pos.PceNum[BN]+pos.PceNum[BB] == 0 &&
+				(pos.PceNum[WN]+pos.PceNum[WB] == 1 || pos.PceNum[WN]+pos.PceNum[WB] == 2) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func EvalPosition(pos *Board) int {
 	score := pos.Material[White] - pos.Material[Black]
+
+	if pos.PceNum[WP] == 0 && pos.PceNum[BP] == 0 && MaterialDraw(pos) {
+		return 0
+	}
 
 	pce := WP
 	for pceNum := 0; pceNum < pos.PceNum[pce]; pceNum++ {
@@ -196,6 +240,26 @@ func EvalPosition(pos *Board) int {
 		} else if pos.Pawns[Black]&FileBBMask[FilesBrd[sq]] == 0 {
 			score -= QueenSemiOpenFile
 		}
+	}
+
+	pce = WK
+	sq := pos.PList[pce][0]
+	Assert(SqOnBoard(sq), "square not on board")
+
+	if pos.Material[Black] <= EndgameMat {
+		score += KingE[SQ64(sq)]
+	} else {
+		score += KingO[SQ64(sq)]
+	}
+
+	pce = BK
+	sq = pos.PList[pce][0]
+	Assert(SqOnBoard(sq), "square not on board")
+
+	if pos.Material[White] <= EndgameMat {
+		score -= KingE[Mirror64[SQ64(sq)]]
+	} else {
+		score -= KingO[Mirror64[SQ64(sq)]]
 	}
 
 	if pos.Side == White {

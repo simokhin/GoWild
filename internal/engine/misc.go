@@ -7,3 +7,10 @@ import "time"
 func GetTimeMs() int64 {
 	return time.Now().UnixMilli()
 }
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
