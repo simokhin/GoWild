@@ -82,6 +82,9 @@ const PawnIsolated = -10
 var PawnPassed = [8]int{0, 5, 10, 20, 35, 60, 100, 200}
 
 const RookOpenFile = 10
+const RookSemiOpenFile = 5
+const QueenOpenFile = 5
+const QueenSemiOpenFile = 3
 
 func EvalPosition(pos *Board) int {
 	score := pos.Material[White] - pos.Material[Black]
@@ -149,6 +152,11 @@ func EvalPosition(pos *Board) int {
 		sq := pos.PList[pce][pceNum]
 		Assert(SqOnBoard(sq), "square not on board")
 		score += RookTable[SQ64(sq)]
+		if pos.Pawns[Both]&FileBBMask[FilesBrd[sq]] == 0 {
+			score += RookOpenFile
+		} else if pos.Pawns[White]&FileBBMask[FilesBrd[sq]] == 0 {
+			score += RookSemiOpenFile
+		}
 	}
 
 	pce = BR
@@ -156,6 +164,38 @@ func EvalPosition(pos *Board) int {
 		sq := pos.PList[pce][pceNum]
 		Assert(SqOnBoard(sq), "square not on board")
 		score -= RookTable[Mirror64[SQ64(sq)]]
+		if pos.Pawns[Both]&FileBBMask[FilesBrd[sq]] == 0 {
+			score -= RookOpenFile
+		} else if pos.Pawns[Black]&FileBBMask[FilesBrd[sq]] == 0 {
+			score -= RookSemiOpenFile
+		}
+
+	}
+
+	pce = WQ
+	for pceNum := 0; pceNum < pos.PceNum[pce]; pceNum++ {
+		sq := pos.PList[pce][pceNum]
+		Assert(SqOnBoard(sq), "square not on board")
+		Assert(FileRankValid(int(FilesBrd[sq])), "invalid file")
+
+		if pos.Pawns[Both]&FileBBMask[FilesBrd[sq]] == 0 {
+			score += QueenOpenFile
+		} else if pos.Pawns[White]&FileBBMask[FilesBrd[sq]] == 0 {
+			score += QueenSemiOpenFile
+		}
+	}
+
+	pce = BQ
+	for pceNum := 0; pceNum < pos.PceNum[pce]; pceNum++ {
+		sq := pos.PList[pce][pceNum]
+		Assert(SqOnBoard(sq), "square not on board")
+		Assert(FileRankValid(int(FilesBrd[sq])), "invalid file")
+
+		if pos.Pawns[Both]&FileBBMask[FilesBrd[sq]] == 0 {
+			score -= QueenOpenFile
+		} else if pos.Pawns[Black]&FileBBMask[FilesBrd[sq]] == 0 {
+			score -= QueenSemiOpenFile
+		}
 	}
 
 	if pos.Side == White {
