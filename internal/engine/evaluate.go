@@ -77,6 +77,12 @@ var Mirror64 = [64]int{
 	0, 1, 2, 3, 4, 5, 6, 7,
 }
 
+const PawnIsolated = -10
+
+var PawnPassed = [8]int{0, 5, 10, 20, 35, 60, 100, 200}
+
+const RookOpenFile = 10
+
 func EvalPosition(pos *Board) int {
 	score := pos.Material[White] - pos.Material[Black]
 
@@ -85,6 +91,14 @@ func EvalPosition(pos *Board) int {
 		sq := pos.PList[pce][pceNum]
 		Assert(SqOnBoard(sq), "square not on board")
 		score += PawnTable[SQ64(sq)]
+
+		if IsolatedMask[SQ64(sq)]&pos.Pawns[White] == 0 {
+			score += PawnIsolated
+		}
+
+		if WhitePassedMask[SQ64(sq)]&pos.Pawns[Black] == 0 {
+			score += PawnPassed[RanksBrd[sq]]
+		}
 	}
 
 	pce = BP
@@ -92,6 +106,14 @@ func EvalPosition(pos *Board) int {
 		sq := pos.PList[pce][pceNum]
 		Assert(SqOnBoard(sq), "square not on board")
 		score -= PawnTable[Mirror64[SQ64(sq)]]
+
+		if IsolatedMask[SQ64(sq)]&pos.Pawns[Black] == 0 {
+			score -= PawnIsolated
+		}
+
+		if BlackPassedMask[SQ64(sq)]&pos.Pawns[White] == 0 {
+			score -= PawnPassed[7-RanksBrd[sq]]
+		}
 	}
 
 	pce = WN
