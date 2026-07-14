@@ -1,4 +1,4 @@
-package main
+package engine
 
 // SqOnBoard returns true if the given 120-square mailbox index corresponds to
 // a real square on the board (i.e., its file is not FileNone, meaning it is not

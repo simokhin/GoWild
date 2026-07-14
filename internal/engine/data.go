@@ -1,4 +1,4 @@
-package main
+package engine
 
 // PceChar maps each internal Piece constant to its printable character.
 // Index by Piece value: Empty('.') -> King('k').

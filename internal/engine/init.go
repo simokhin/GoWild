@@ -1,4 +1,7 @@
-package main
+// Package engine implements a chess engine using a 120-square mailbox board
+// representation with bitboard support, Zobrist hashing, move generation,
+// and a UCI front end.
+package engine
 
 import (
 	"math/rand"

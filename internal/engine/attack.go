@@ -1,4 +1,4 @@
-package main
+package engine
 
 // KnDir lists the 8 knight move offsets in the 120-square mailbox board.
 // For a knight at square S, the reachable squares are S+offsets[i].

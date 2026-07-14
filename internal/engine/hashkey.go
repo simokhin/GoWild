@@ -1,4 +1,4 @@
-package main
+package engine
 
 // GeneratePosKey computes the Zobrist hash key for the current board position.
 // It XORs together piece-square keys, the side-to-move key, the en-passant

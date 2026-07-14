@@ -1,4 +1,4 @@
-package main
+package engine
 
 var PawnTable = [64]int{
 	0, 0, 0, 0, 0, 0, 0, 0,
