@@ -63,7 +63,7 @@ func ClearForSearch(pos *Board, info *SearchInfo) {
 	info.Fhf = 0
 }
 
-func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
+func Quiescence(alpha, beta int, pos *Board, info *SearchInfo) int {
 	Assert(CheckBoard(pos), "board check failed")
 
 	if info.Nodes&2047 == 0 {
@@ -72,7 +72,7 @@ func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
 
 	info.Nodes++
 
-	if IsRepetition(pos) || pos.FiftyMove >= 100 {
+	if (IsRepetition(pos) || pos.FiftyMove >= 100) && pos.Ply != 0 {
 		return 0
 	}
 
@@ -118,7 +118,7 @@ func Quiescene(alpha, beta int, pos *Board, info *SearchInfo) int {
 		}
 
 		legal++
-		score = -Quiescene(-beta, -alpha, pos, info)
+		score = -Quiescence(-beta, -alpha, pos, info)
 		TakeMove(pos)
 
 		if info.Stopped.Load() {
@@ -184,14 +184,16 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 
 	if depth == 0 {
 		//info.Nodes++
-		return Quiescene(alpha, beta, pos, info)
+		return Quiescence(alpha, beta, pos, info)
 	}
 
 	if info.Nodes&2047 == 0 {
 		CheckUp(info)
 	}
 
-	if IsRepetition(pos) || pos.FiftyMove >= 100 && pos.Ply != 0 {
+	info.Nodes++
+
+	if (IsRepetition(pos) || pos.FiftyMove >= 100) && pos.Ply != 0 {
 		return 0
 	}
 
@@ -204,7 +206,20 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 		depth++
 	}
 
-	info.Nodes++
+	score := -Infinite
+
+	if doNull && !inCheck && pos.Ply != 0 && pos.BigPce[pos.Side] > 0 && depth >= 4 {
+		MakeNullMove(pos)
+		score = -AlphaBeta(-beta, -beta+1, depth-4, pos, info, false)
+		TakeNullMove(pos)
+
+		if info.Stopped.Load() {
+			return 0
+		}
+		if score >= beta {
+			return beta
+		}
+	}
 
 	list := &MoveList{}
 	GenerateAllMoves(pos, list)
@@ -212,7 +227,7 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	legal := 0
 	oldAlpha := alpha
 	bestMove := NoMove
-	score := -Infinite
+	score = -Infinite
 	pvMove := ProbePvMove(pos)
 
 	if pvMove != NoMove {

@@ -368,3 +368,59 @@ func TakeMove(pos *Board) {
 
 	Assert(CheckBoard(pos), "board check failed")
 }
+
+func MakeNullMove(pos *Board) {
+	Assert(CheckBoard(pos), "board check failed")
+	Assert(!SqAttacked(pos.KingSq[pos.Side], pos.Side^1, pos), "king mus not be in check for null move")
+
+	pos.Ply++
+
+	pos.History = append(pos.History, Undo{PosKey: pos.PosKey})
+	hist := len(pos.History) - 1
+
+	if pos.EnPas != NoSquare {
+		HashEP(pos)
+	}
+
+	pos.History[hist].Move = NoMove
+	pos.History[hist].FiftyMove = pos.FiftyMove
+	pos.History[hist].EnPas = pos.EnPas
+	pos.History[hist].CastlePerm = pos.CastlePerm
+
+	pos.EnPas = NoSquare
+	pos.Side ^= 1
+	HashSide(pos)
+
+	Assert(CheckBoard(pos), "board check failed")
+	Assert(pos.HisPly() >= 0 && pos.HisPly() < MaxGameMoves, "hisPly out of range")
+	Assert(pos.Ply >= 0 && pos.Ply < MaxDepth, "ply out of range")
+}
+
+func TakeNullMove(pos *Board) {
+	Assert(CheckBoard(pos), "board check failed")
+
+	pos.Ply--
+
+	hist := len(pos.History) - 1
+	undo := pos.History[hist]
+	pos.History = pos.History[:hist]
+
+	if pos.EnPas != NoSquare {
+		HashEP(pos)
+	}
+
+	pos.CastlePerm = undo.CastlePerm
+	pos.FiftyMove = undo.FiftyMove
+	pos.EnPas = undo.EnPas
+
+	if pos.EnPas != NoSquare {
+		HashEP(pos)
+	}
+
+	pos.Side ^= 1
+	HashSide(pos)
+
+	Assert(CheckBoard(pos), "board check failed")
+	Assert(pos.HisPly() >= 0 && pos.HisPly() < MaxGameMoves, "hisPly out of range")
+	Assert(pos.Ply >= 0 && pos.Ply < MaxDepth, "ply out of range")
+}
