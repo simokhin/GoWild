@@ -124,10 +124,10 @@ func UciLoop() {
 	fmt.Println("uciok")
 
 	pos := &Board{}
-	pos.PvTable = &PVTable{}
+	pos.HashTable = &HashTable{}
 	info := &SearchInfo{}
 
-	InitPvTable(pos.PvTable)
+	InitHashTable(pos.HashTable)
 
 	for {
 		line, err := reader.ReadString('\n')

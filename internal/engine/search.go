@@ -5,6 +5,13 @@ import "fmt"
 const Infinite = 30000
 const Mate = 29000
 
+// IsMateScore reports whether score is a mate-distance score (as opposed to a
+// regular positional evaluation). Used to distinguish genuine mate scores from
+// scores that merely happen to be large.
+func IsMateScore(score int) bool {
+	return score > Mate-MaxDepth || score < -Mate+MaxDepth
+}
+
 func CheckUp(info *SearchInfo) {
 	if info.TimeSet && GetTimeMs() > info.StopTime {
 		info.Stopped.Store(true)
@@ -52,13 +59,15 @@ func ClearForSearch(pos *Board, info *SearchInfo) {
 		}
 	}
 
-	ClearPvTable(pos.PvTable)
+	// ClearHashTable(pos.HashTable)
 
+	pos.HashTable.OverWrite = 0
+	pos.HashTable.Hit = 0
+	pos.HashTable.Cut = 0
 	pos.Ply = 0
 
 	info.Stopped.Store(false)
 	info.Nodes = 0
-
 	info.Fh = 0
 	info.Fhf = 0
 }
@@ -106,8 +115,6 @@ func Quiescence(alpha, beta int, pos *Board, info *SearchInfo) int {
 	}
 
 	legal := 0
-	oldAlpha := alpha
-	bestMove := NoMove
 	score = -Infinite
 
 	for moveNum := 0; moveNum < list.Count; moveNum++ {
@@ -134,16 +141,11 @@ func Quiescence(alpha, beta int, pos *Board, info *SearchInfo) int {
 				return beta
 			}
 			alpha = score
-			bestMove = list.Moves[moveNum].MoveInt
 		}
 	}
 
 	if inCheck && legal == 0 {
 		return -Mate + pos.Ply
-	}
-
-	if alpha != oldAlpha {
-		StorePvMove(pos, bestMove)
 	}
 
 	return alpha
@@ -216,7 +218,7 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 		if info.Stopped.Load() {
 			return 0
 		}
-		if score >= beta {
+		if score >= beta && !IsMateScore(score) {
 			return beta
 		}
 	}
@@ -227,8 +229,17 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	legal := 0
 	oldAlpha := alpha
 	bestMove := NoMove
+	bestScore := -Infinite
+
 	score = -Infinite
-	pvMove := ProbePvMove(pos)
+	var pvMove int
+	var found bool
+
+	pvMove, score, found = ProbeHashEntry(pos, alpha, beta, depth)
+	if found {
+		pos.HashTable.Cut++
+		return score
+	}
 
 	if pvMove != NoMove {
 		for moveNum := 0; moveNum < list.Count; moveNum++ {
@@ -254,28 +265,34 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 			return 0
 		}
 
-		if score > alpha {
-			if score >= beta {
-				if legal == 1 {
-					info.Fhf++
+		if score > bestScore {
+			bestScore = score
+			bestMove = list.Moves[moveNum].MoveInt
+			if score > alpha {
+				if score >= beta {
+					if legal == 1 {
+						info.Fhf++
+					}
+					info.Fh++
+
+					if list.Moves[moveNum].MoveInt&MFlagCap == 0 {
+						pos.SearchKillers[1][pos.Ply] = pos.SearchKillers[0][pos.Ply]
+						pos.SearchKillers[0][pos.Ply] = list.Moves[moveNum].MoveInt
+					}
+
+					StoreHashEntry(pos, bestMove, beta, HFBeta, depth)
+
+					return beta
 				}
-				info.Fh++
+				alpha = score
+				bestMove = list.Moves[moveNum].MoveInt
 
 				if list.Moves[moveNum].MoveInt&MFlagCap == 0 {
-					pos.SearchKillers[1][pos.Ply] = pos.SearchKillers[0][pos.Ply]
-					pos.SearchKillers[0][pos.Ply] = list.Moves[moveNum].MoveInt
+					pos.SearchHistory[pos.Pieces[FromSq(bestMove)]][ToSq(bestMove)] += depth
 				}
-
-				return beta
 			}
-			alpha = score
-			bestMove = list.Moves[moveNum].MoveInt
-
-			if list.Moves[moveNum].MoveInt&MFlagCap == 0 {
-				pos.SearchHistory[pos.Pieces[FromSq(bestMove)]][ToSq(bestMove)] += depth
-			}
-
 		}
+
 	}
 
 	if legal == 0 {
@@ -286,7 +303,9 @@ func AlphaBeta(alpha, beta, depth int, pos *Board, info *SearchInfo, doNull bool
 	}
 
 	if alpha != oldAlpha {
-		StorePvMove(pos, bestMove)
+		StoreHashEntry(pos, bestMove, bestScore, HFExact, depth)
+	} else {
+		StoreHashEntry(pos, bestMove, alpha, HFAlpha, depth)
 	}
 
 	return alpha

@@ -371,7 +371,7 @@ func TakeMove(pos *Board) {
 
 func MakeNullMove(pos *Board) {
 	Assert(CheckBoard(pos), "board check failed")
-	Assert(!SqAttacked(pos.KingSq[pos.Side], pos.Side^1, pos), "king mus not be in check for null move")
+	Assert(!SqAttacked(pos.KingSq[pos.Side], pos.Side^1, pos), "king must not be in check for null move")
 
 	pos.Ply++
 

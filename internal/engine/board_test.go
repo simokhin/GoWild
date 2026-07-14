@@ -21,8 +21,8 @@ func TestMirrorBoard(t *testing.T) {
 		}
 
 		board := &Board{}
-		board.PvTable = &PVTable{}
-		InitPvTable(board.PvTable)
+		board.HashTable = &HashTable{}
+		InitHashTable(board.HashTable)
 
 		if ParseFEN(fen, board) != 0 {
 			t.Errorf("line %d: failed to parse FEN: %s", i, fen)

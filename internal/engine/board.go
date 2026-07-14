@@ -147,8 +147,8 @@ func ResetBoard(pos *Board) {
 	// Lazily allocate the PV table on first reset so callers don't have to set
 	// it up themselves, then clear it since any previous position's PV entries
 	// are no longer valid.
-	if pos.PvTable == nil {
-		pos.PvTable = &PVTable{}
+	if pos.HashTable == nil {
+		pos.HashTable = &HashTable{}
 	}
 }
 
