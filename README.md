@@ -2,7 +2,7 @@
 
 GoWild is a UCI-compatible chess engine written in Go.
 
-It started as a Go port of [VICE](https://www.chessprogramming.org/VICE) (Video Instructional Chess Engine) — the C engine built by Richard "Bluefever Software" Allbert in his chess programming video series — and has now reached feature parity with it: a 10x12 board with bitboard piece sets, PV/transposition tables, and alpha-beta search, reimplemented idiomatically in Go. From here, GoWild will continue to evolve independently of VICE.
+It started as a Go port of [VICE](https://github.com/bluefeversoft/vice) (Video Instructional Chess Engine) — the C engine built by Richard "Bluefever Software" Allbert in his chess programming video series — and has now reached feature parity with it: a 10x12 board with bitboard piece sets, PV/transposition tables, and alpha-beta search, reimplemented idiomatically in Go. From here, GoWild will continue to evolve independently of VICE.
 
 ## Features
 
@@ -53,7 +53,7 @@ go test ./...
 
 ## Acknowledgments
 
-- [VICE](https://www.chessprogramming.org/VICE) by Richard Allbert (Bluefever Software) — the engine GoWild was originally ported from before growing into its own project.
+- [VICE](https://github.com/bluefeversoft/vice) by Richard Allbert (Bluefever Software) — the engine GoWild was originally ported from before growing into its own project.
 - [Chess Programming Wiki](https://www.chessprogramming.org/) — reference for algorithms and techniques used throughout.
 
 ## License
